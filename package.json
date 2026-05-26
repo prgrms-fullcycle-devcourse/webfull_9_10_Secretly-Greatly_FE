@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint && pnpm run lint:naming",
+    "lint:naming": "node scripts/checkNamingConvention.mjs",
     "prepare": "husky",
     "format": "prettier --write ."
   },
