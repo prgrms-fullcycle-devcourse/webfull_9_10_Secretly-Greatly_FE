@@ -60,6 +60,53 @@ graph TD
 
 ---
 
+## 🛠️ 실무 예시 (Example: 로그인 페이지 뷰)
+
+로그인 화면의 레이아웃과 구성을 조립하는 `views/login` 슬라이스의 구현 예시입니다. 
+이 뷰는 독립된 위젯(`LoginForm`), 로고 이미지 등을 받아 하나의 완성된 페이지 화면으로 조립합니다.
+
+### 1. 폴더 구조
+```text
+views/
+└── login/                          # 로그인 화면 슬라이스
+    ├── ui/
+    │   └── LoginPage.tsx           # 로그인 페이지 컴포넌트
+    └── index.ts                    # Public API (외부에는 LoginPage 컴포넌트만 export)
+```
+
+### 2. 코드 구현
+
+#### ① 로그인 페이지 컴포넌트 (`ui/LoginPage.tsx`)
+```tsx
+import { LoginForm } from '@/widgets/authForm'; // widgets 레이어 참조 가능
+
+export const LoginPage = () => {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+      {/* 화면의 전체 레이아웃 구성 및 정적 요소 배치 */}
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+          Secretly Greatly
+        </h1>
+        <p className="mt-2 text-sm text-gray-600">
+          비밀스럽고 위대하게 서비스를 시작하세요.
+        </p>
+      </div>
+
+      {/* 로그인 폼 위젯 삽입 */}
+      <LoginForm />
+    </div>
+  );
+};
+```
+
+### 3. Public API (`index.ts`)
+```typescript
+export { LoginPage } from './ui/LoginPage';
+```
+
+---
+
 ## 🚨 자주 발생하는 안티 패턴 (Anti-Patterns)
 
 | 안티 패턴 | 문제점 | 해결 방안 |

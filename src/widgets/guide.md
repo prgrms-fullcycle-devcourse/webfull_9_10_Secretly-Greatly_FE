@@ -59,6 +59,67 @@ graph TD
 
 ---
 
+## 🛠️ 실무 예시 (Example: 로그인 폼 위젯)
+
+로그인 기능을 수행하는 `LoginForm` 위젯을 구성하는 예시입니다. 
+이 위젯은 독립적으로 동작하는 하나의 완성된 블록으로, 하위 레이어인 `features`(로그인 요청 액션), `shared`(공통 입력창/버튼) 등을 조립하여 만듭니다.
+
+### 1. 폴더 구조
+```text
+widgets/
+└── authForm/                       # 로그인/회원가입 관련 위젯 슬라이스
+    ├── ui/
+    │   └── LoginForm.tsx           # 로그인 폼 컴포넌트
+    └── index.ts                    # Public API (외부에는 LoginForm 컴포넌트만 export)
+```
+
+### 2. 컴포넌트 구현 (`LoginForm.tsx`)
+```tsx
+import { useState } from 'react';
+import { useLogin } from '@/features/auth'; // features 레이어 참조 (비즈니스 로직 및 API 요청 훅)
+import { Button, Input } from '@/shared/ui'; // shared 레이어 참조 (비즈니스와 무관한 공통 UI 컴포넌트)
+
+export const LoginForm = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { login, isLoading } = useLogin(); // 로그인 실행 피처 훅
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    login({ email, password });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6 border rounded-lg shadow-sm max-w-md mx-auto">
+      <h2 className="text-xl font-bold text-center">로그인</h2>
+      <Input
+        type="email"
+        placeholder="이메일을 입력하세요"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <Input
+        type="password"
+        placeholder="비밀번호를 입력하세요"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <Button type="submit" disabled={isLoading}>
+        {isLoading ? '로그인 중...' : '로그인'}
+      </Button>
+    </form>
+  );
+};
+```
+
+### 3. Public API (`index.ts`)
+```typescript
+export { LoginForm } from './ui/LoginForm';
+```
+
+---
+
 ## 🚨 자주 발생하는 안티 패턴 (Anti-Patterns)
 
 | 안티 패턴 | 문제점 | 해결 방안 |

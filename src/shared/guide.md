@@ -62,6 +62,77 @@ graph TD
 
 ---
 
+## 🛠️ 실무 예시 (Example: 공통 Input/Button UI 컴포넌트)
+
+특정 비즈니스에 종속되지 않은 범용 UI 컴포넌트인 `shared/ui` 구현 예시입니다. 
+이 컴포넌트들은 앱 내의 로그인 폼(`LoginForm` 위젯) 등 어느 곳에서나 가져다 재사용할 수 있도록 설계합니다.
+
+### 1. 폴더 구조
+```text
+shared/
+└── ui/
+    ├── button/
+    │   ├── Button.tsx              # 공통 버튼 컴포넌트
+    │   └── index.ts
+    ├── input/
+    │   ├── Input.tsx               # 공통 입력 필드 컴포넌트
+    │   └── index.ts
+    └── index.ts                    # ui 세그먼트 통합 export
+```
+
+### 2. 코드 구현
+
+#### ① 공통 Button 컴포넌트 (`ui/button/Button.tsx`)
+```tsx
+import { ButtonHTMLAttributes, ReactNode } from 'react';
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode;
+  variant?: 'primary' | 'secondary';
+}
+
+export const Button = ({ children, variant = 'primary', className = '', ...props }: ButtonProps) => {
+  const baseStyle = 'px-4 py-2 rounded font-medium transition-colors disabled:opacity-50';
+  const variantStyles = {
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-800',
+  };
+
+  return (
+    <button
+      className={`${baseStyle} ${variantStyles[variant]} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+```
+
+#### ② 공통 Input 컴포넌트 (`ui/input/Input.tsx`)
+```tsx
+import { InputHTMLAttributes } from 'react';
+
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
+
+export const Input = ({ className = '', ...props }: InputProps) => {
+  return (
+    <input
+      className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+      {...props}
+    />
+  );
+};
+```
+
+### 3. Public API (`ui/index.ts`)
+```typescript
+export { Button } from './button/Button';
+export { Input } from './input/Input';
+```
+
+---
+
 ## 🚨 자주 발생하는 안티 패턴 (Anti-Patterns)
 
 | 안티 패턴 | 문제점 | 해결 방안 |

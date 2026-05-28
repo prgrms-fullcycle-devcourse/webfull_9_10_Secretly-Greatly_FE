@@ -67,6 +67,76 @@ graph TD
 
 ---
 
+## 🛠️ 실무 예시 (Example: 로그인 피처)
+
+사용자가 로그인하는 동작을 처리하는 `features/auth` 슬라이스의 구현 예시입니다. 
+이 피처는 API 요청을 발생시키고 성공 시 `entities/user`에 사용자 정보를 저장하는 비즈니스 액션을 담당합니다.
+
+### 1. 폴더 구조
+```text
+features/
+└── auth/                           # 로그인/로그아웃 관련 피처 슬라이스
+    ├── api/
+    │   └── login.ts                # 로그인 API 요청 함수
+    ├── model/
+    │   └── useLogin.ts             # React Query Mutation 훅 (성공 시 유저 정보 세팅)
+    └── index.ts                    # Public API (외부에는 useLogin 훅만 export)
+```
+
+### 2. 코드 구현
+
+#### ① API 요청 (`api/login.ts`)
+```typescript
+import { User } from '@/entities/user'; // entities 레이어 참조 가능 (하위 레이어)
+
+export interface LoginParams {
+  email: string;
+  password?: string;
+}
+
+export const loginApi = async (params: LoginParams): Promise<User> => {
+  const response = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    throw new Error('로그인에 실패했습니다.');
+  }
+
+  return response.json();
+};
+```
+
+#### ② 비즈니스 로직 훅 (`model/useLogin.ts`)
+```typescript
+import { useMutation } from '@tanstack/react-query';
+import { useUserStore } from '@/entities/user'; // entities 레이어 참조 가능 (하위 레이어)
+import { loginApi } from '../api/login';
+
+export const useLogin = () => {
+  const setCurrentUser = useUserStore((state) => state.setCurrentUser);
+
+  const { mutate: login, isPending: isLoading, error } = useMutation({
+    mutationFn: loginApi,
+    onSuccess: (userData) => {
+      // 로그인 성공 시 User 엔티티의 전역 상태 저장
+      setCurrentUser(userData);
+    },
+  });
+
+  return { login, isLoading, error };
+};
+```
+
+### 3. Public API (`index.ts`)
+```typescript
+export { useLogin } from './model/useLogin';
+```
+
+---
+
 ## 🚨 자주 발생하는 안티 패턴 (Anti-Patterns)
 
 | 안티 패턴 | 문제점 | 해결 방안 |

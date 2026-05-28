@@ -60,6 +60,88 @@ graph TD
 
 ---
 
+## 🛠️ 실무 예시 (Example: User 엔티티)
+
+사용자(User) 정보를 다루는 `entities/user` 슬라이스의 구현 예시입니다. 
+이 엔티티는 사용자 데이터의 구조(Type)와 상태(Store), 그리고 데이터를 정적으로 렌더링하는 순수 UI 컴포넌트로 구성됩니다.
+
+### 1. 폴더 구조
+```text
+entities/
+└── user/                           # 유저 도메인 엔티티 슬라이스
+    ├── model/
+    │   ├── types.ts                # 유저 데이터 타입 정의
+    │   └── store.ts                # 유저 로그인 상태를 관리하는 Zustand 스토어
+    ├── ui/
+    │   └── Avatar.tsx              # 유저 프로필 이미지를 렌더링하는 UI 컴포넌트
+    └── index.ts                    # Public API (외부에는 타입, 스토어, UI 컴포넌트만 export)
+```
+
+### 2. 코드 구현
+
+#### ① 타입 정의 (`model/types.ts`)
+```typescript
+export interface User {
+  id: string;
+  email: string;
+  nickname: string;
+  avatarUrl?: string;
+}
+```
+
+#### ② 상태 관리 스토어 (`model/store.ts`)
+```typescript
+import { create } from 'zustand';
+import { User } from './types';
+
+interface UserStore {
+  currentUser: User | null;
+  setCurrentUser: (user: User) => void;
+  clearCurrentUser: () => void;
+}
+
+export const useUserStore = create<UserStore>((set) => ({
+  currentUser: null,
+  setCurrentUser: (user) => set({ currentUser: user }),
+  clearCurrentUser: () => set({ currentUser: null }),
+}));
+```
+
+#### ③ UI 컴포넌트 (`ui/Avatar.tsx`)
+```tsx
+import { User } from '../model/types';
+
+interface AvatarProps {
+  user: User;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export const Avatar = ({ user, size = 'md' }: AvatarProps) => {
+  const sizeClasses = {
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10',
+    lg: 'w-12 h-12',
+  };
+
+  return (
+    <img
+      src={user.avatarUrl || '/default-avatar.png'}
+      alt={`${user.nickname}'s avatar`}
+      className={`${sizeClasses[size]} rounded-full border border-gray-200 object-cover`}
+    />
+  );
+};
+```
+
+### 3. Public API (`index.ts`)
+```typescript
+export type { User } from './model/types';
+export { useUserStore } from './model/store';
+export { Avatar } from './ui/Avatar';
+```
+
+---
+
 ## 🚨 자주 발생하는 안티 패턴 (Anti-Patterns)
 
 | 안티 패턴 | 문제점 | 해결 방안 |

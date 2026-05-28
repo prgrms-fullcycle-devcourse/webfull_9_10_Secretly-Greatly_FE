@@ -54,6 +54,78 @@ graph TD
 
 ---
 
+## 🛠️ 실무 예시 (Example: Next.js 라우트 정의 및 전역 프로바이더)
+
+애플리케이션 최상단 진입점이자 라우팅 경로를 지정하는 `app` 레이어의 구현 예시입니다. 
+Next.js App Router의 `page.tsx`는 껍데기 역할을 하며, 실제 UI와 배치는 `views` 레이어의 컴포넌트를 사용합니다.
+
+### 1. 폴더 구조
+```text
+app/
+├── login/
+│   └── page.tsx                    # /login 경로의 Next.js 라우팅 진입점
+├── providers.tsx                   # 전역 Provider 설정 (React Query 등)
+└── layout.tsx                      # 글로벌 레이아웃
+```
+
+### 2. 코드 구현
+
+#### ① 라우팅 페이지 (`app/login/page.tsx`)
+```tsx
+import { LoginPage } from '@/views/login'; // views 레이어 참조 가능
+
+export default function Page() {
+  // Next.js App Router 페이지 컴포넌트에서는 껍데기 역할만 수행하고,
+  // 실제 화면 렌더링은 views 레이어의 컴포넌트로 완전히 위임합니다.
+  return <LoginPage />;
+}
+```
+
+#### ② 글로벌 프로바이더 (`app/providers.tsx`)
+```tsx
+'use client';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: false,
+      },
+    },
+  }));
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+}
+```
+
+#### ③ 최상위 레이아웃 (`app/layout.tsx`)
+```tsx
+import { Providers } from './providers';
+import './globals.css';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ko">
+      <body>
+        <Providers>
+          {children}
+        </Providers>
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
 ## 🚨 자주 발생하는 안티 패턴 (Anti-Patterns)
 
 | 안티 패턴 | 문제점 | 해결 방안 |
