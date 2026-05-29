@@ -1,0 +1,237 @@
+:root {
+  /* ── Surface ──────────── (VS Code "Dark 2026" 기본 테마) ── */
+  --vscode-window-background: #191a1b;
+
+  --vscode-titlebar-background: #191a1b;
+  --vscode-titlebar-foreground: #8c8c8c;
+  --vscode-titlebar-border: #2a2b2c;
+  --vscode-titlebar-inactiveIconForeground: rgba(255, 255, 255, 0.58);
+  --vscode-titlebar-activeIconForeground: #ffffff;
+  --vscode-titlebar-closeButton-hoverBackground: #c42b1c;
+
+  --vscode-activitybar-background: #191a1b;
+  --vscode-activitybar-foreground: #bfbfbf;
+  --vscode-activitybar-inactiveForeground: #8c8c8c;
+  --vscode-activitybar-activeBorder: #bfbfbf;
+  --vscode-activitybar-border: #2a2b2c;
+
+  --vscode-sidebar-background: #191a1b;
+  --vscode-sidebar-foreground: #bfbfbf;
+  --vscode-sidebar-border: #2a2b2c;
+
+  --vscode-sidebarSectionHeader-background: #191a1b;
+  --vscode-sidebarSectionHeader-foreground: #bfbfbf;
+  --vscode-sidebarSectionHeader-border: #2a2b2c;
+
+  --vscode-editor-background: #121314;
+  --vscode-editor-foreground: #bbbebf;
+
+  --vscode-panel-background: #191a1b;
+  --vscode-panel-border: #2a2b2c;
+
+  --vscode-panelTitle-activeForeground: #bfbfbf;
+  --vscode-panelTitle-inactiveForeground: #8c8c8c;
+  --vscode-panelTitle-activeBorder: #3994bc;
+  --vscode-icon-foreground: #8c8c8c;
+
+  --vscode-statusbar-background: #191a1b;
+  --vscode-statusbar-foreground: #8c8c8c;
+  --vscode-statusbar-border: #2a2b2c;
+
+  /* ── List / Tree ─────────────────────────────────── */
+  --vscode-list-hoverBackground: #ffffff0d;
+  --vscode-list-activeSelectionBackground: #3994bc26;
+  --vscode-list-activeSelectionForeground: #ededed;
+  --vscode-list-inactiveSelectionBackground: #2c2d2e;
+  --vscode-list-focusBackground: #3994bc26;
+
+  /* ── Editor Group Header ─────────────────────────── */
+  --vscode-editorGroupHeader-tabsBackground: #191a1b;
+  --vscode-editorGroupHeader-border: #2a2b2c;
+
+  /* ── Tabs ────────────────────────────────────────── */
+  --vscode-tab-activeBackground: #121314;
+  --vscode-tab-activeForeground: #bfbfbf;
+  --vscode-tab-inactiveBackground: #191a1b;
+  --vscode-tab-inactiveForeground: #8c8c8c;
+  --vscode-tab-selectedBackground: #121314;
+  --vscode-tab-selectedForeground: #bfbfbfa0;
+  --vscode-tab-border: #2a2b2c;
+  --vscode-tab-activeBorderTop: #3994bc;
+  --vscode-tab-dirtyIndicator: #e8a735;
+
+  /* ── Menu ────────────────────────────────────────── */
+  --vscode-menu-background: #202122;
+  --vscode-menu-foreground: #bfbfbf;
+  --vscode-quickInput-background: #252526;
+  --vscode-menu-selectionBackground: #3994bc26;
+  --vscode-menu-selectionForeground: #ededed;
+  --vscode-menu-separatorBackground: #2a2b2c;
+  --vscode-menu-border: #2a2b2c;
+
+  /* ── Input ───────────────────────────────────────── */
+  --vscode-input-background: #191a1b;
+  --vscode-input-foreground: #bfbfbf;
+  --vscode-input-border: #333536;
+  --vscode-input-placeholderForeground: #555555;
+
+  /* ── Button ──────────────────────────────────────── */
+  --vscode-button-background: #297aa0;
+  --vscode-button-foreground: #ffffff;
+  --vscode-button-hoverBackground: #2b7da3;
+  --vscode-button-secondaryBackground: #3a3d41;
+  --vscode-button-secondaryForeground: #ffffff;
+  --vscode-button-secondaryHoverBackground: #45494e;
+
+  /* ── Scrollbar ───────────────────────────────────── */
+  --vscode-scrollbarSlider-background: #83848533;
+  --vscode-scrollbarSlider-hoverBackground: #83848566;
+  --vscode-scrollbarSlider-activeBackground: #83848599;
+
+  /* ── Focus / Border ──────────────────────────────── */
+  --vscode-focusBorder: #3994bcb3;
+  --vscode-widget-border: #2a2b2c;
+  --vscode-contrastBorder: transparent;
+  --border-color-default: #2a2b2c;
+  --border-color-subtle: #2a2b2c;
+
+  /* ── Text ────────────────────────────────────────── */
+  --vscode-foreground: #bfbfbf;
+  --vscode-descriptionForeground: #8c8c8c;
+  --vscode-disabledForeground: #555555;
+  --vscode-errorForeground: #f48771;
+
+  /* ── Notification ────────────────────────────────── */
+  --vscode-notifications-background: #202122;
+  --vscode-notifications-foreground: #bfbfbf;
+  --vscode-notifications-border: #2a2b2c;
+  --vscode-notificationToast-border: #2a2b2c;
+  --vscode-notificationsInfoIcon-foreground: #75beff;
+  --vscode-notificationsWarningIcon-foreground: #cca700;
+  --vscode-notificationsErrorIcon-foreground: #f48771;
+
+  /* ── Editor Gutter ───────────────────────────────── */
+  --vscode-editorLineNumber-foreground: #858889;
+  --vscode-editorLineNumber-activeForeground: #bbbebf;
+  --vscode-editorGutter-background: #121314;
+  --vscode-editorGutter-addedBackground: #2ea043;
+  --vscode-editorGutter-modifiedBackground: #1b81a8;
+  --vscode-editorGutter-deletedBackground: #f85149;
+  --vscode-editorIndentGuide-background: #2a2b2c;
+  --vscode-editorIndentGuide-activeBackground: #707070;
+
+  /* ── Editor Syntax (Dark 2026 — GitHub Dark 계열) ──── */
+  --syntax-comment: #8b949e;
+  --syntax-keyword: #ff7b72;
+  --syntax-string: #a5d6ff;
+  --syntax-number: #79c0ff;
+  --syntax-function: #d2a8ff;
+  --syntax-variable: #ffa657;
+  --syntax-type: #7ee787;
+  --syntax-class: #7ee787;
+  --syntax-operator: #c9d1d9;
+
+  /* ── Terminal ────────────────────────────────────── */
+  --terminal-background: #191a1b;
+  --terminal-foreground: #bfbfbf;
+  --terminal-cursor: #ffffff;
+  --terminal-selectionBackground: #ffffff40;
+  --terminal-ansiBlue: #569cd6;
+  --terminal-ansiCyan: #4ec9b0;
+
+  /* ── Editor Selection ───────────────────────────────── */
+  --vscode-editor-selectionBackground: #264f78;
+
+  /* ── Toolbar ─────────────────────────────────────────── */
+  --vscode-toolbar-separator: rgba(255, 255, 255, 0.15);
+
+  /* ── Keyboard Labels ─────────────────────────────────── */
+  --vscode-keybindingLabel-background: #3c3c3c;
+  --vscode-keybindingLabel-border: #555555;
+  --vscode-keybindingLabel-foreground: #cccccc;
+
+  /* ── Shadow ──────────────────────────────────────── */
+  --vscode-widget-shadow: rgba(0, 0, 0, 0.36);
+  --shadow-dropdown: 0 2px 8px rgba(0, 0, 0, 0.36);
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-notification: 0 4px 12px rgba(0, 0, 0, 0.40);
+
+  /* ── Z-index ─────────────────────────────────────── */
+  --z-base: 0;
+  --z-sidebar: 10;
+  --z-panel: 10;
+  --z-statusbar: 20;
+  --z-titlebar: 30;
+  --z-drag-overlay: 50;
+  --z-tooltip: 100;
+  --z-dropdown: 200;
+  --z-context-menu: 300;
+  --z-overlay: 400;
+  --z-command-palette: 500;
+  --z-notification: 600;
+
+  /* ── Typography ──────────────────────────────────── */
+  --font-ui: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-editor: "Cascadia Code", "Consolas", "Courier New", monospace;
+
+  --font-size-xs: 10px;
+  --font-size-sm: 11px;
+  --font-size-md: 12px;
+  --font-size-lg: 13px;
+  --font-size-editor: 14px;
+
+  --line-height-tight: 16px;
+  --line-height-normal: 20px;
+  --line-height-editor: 22px;
+
+  /* ── Spacing ─────────────────────────────────────── */
+  --space-0: 0;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 12px;
+  --space-6: 16px;
+  --space-7: 20px;
+  --space-8: 24px;
+
+  /* ── Radius ──────────────────────────────────────── */
+  --radius-none: 0;
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+
+  /* ── Motion ──────────────────────────────────────── */
+  --duration-fast: 80ms;
+  --duration-normal: 120ms;
+  --easing-default: ease-out;
+
+  /* ── Dimensions ──────────────────────────────────── */
+  --titlebar-height: 34px;
+  --activitybar-width: 48px;
+  --activitybar-action-height: 48px;    /* 각 아이콘 셀 높이 */
+  --activitybar-icon-size: 24px;        /* VS Code 공식값 */
+  --sidebar-width: 300px;
+  --panel-height: 220px;
+  --statusbar-height: 22px;
+  --statusbar-item-padding: 0 5px;
+  --tabbar-height: 35px;
+  --tabbar-height-compact: 22px;
+  --panel-tabbar-height: 30px;
+  --gutter-width: 50px;
+  --tooltip-delay: 500ms;
+
+  /* ── Icon sizes ──────────────────────────────────── */
+  --icon-size-sm: 14px;
+  --icon-size-md: 16px;
+  --icon-size-lg: 20px;
+  --file-icon-size: 16px;
+
+  /* ── Status Bar item variants ────────────────────── */
+  --vscode-statusBarItem-warningBackground: #cc6633;
+  --vscode-statusBarItem-warningForeground: #ffffff;
+  --vscode-statusBarItem-errorBackground: #c72e0f;
+  --vscode-statusBarItem-errorForeground: #ffffff;
+  --vscode-statusBarItem-remoteBackground: #3994bc;
+  --vscode-statusBarItem-remoteForeground: #ffffff;
+}

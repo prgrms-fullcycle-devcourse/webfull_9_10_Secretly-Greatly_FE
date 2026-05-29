@@ -1,26 +1,525 @@
 @import "tailwindcss";
+@import "../shared/styles/tokens.css";
+@import "../shared/styles/icon.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ── Codicons ─────────────────────────────────────────
+   Font-face + all glyph mappings come from the official
+   @vscode/codicons package, imported in app/layout.tsx. */
 
+/* ── Tailwind 테마 확장 ──────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-editor);
+
+  /* ── Backgrounds ── */
+  --color-vscode-window:      var(--vscode-window-background);
+  --color-vscode-titlebar:    var(--vscode-titlebar-background);
+  --color-vscode-activitybar: var(--vscode-activitybar-background);
+  --color-vscode-sidebar:     var(--vscode-sidebar-background);
+  --color-vscode-editor:      var(--vscode-editor-background);
+  --color-vscode-panel:       var(--vscode-panel-background);
+  --color-vscode-statusbar:   var(--vscode-statusbar-background);
+  --color-vscode-input:       var(--vscode-input-background);
+  --color-vscode-menu:        var(--vscode-menu-background);
+  --color-vscode-list-hover:  var(--vscode-list-hoverBackground);
+  --color-vscode-list-active: var(--vscode-list-activeSelectionBackground);
+  --color-vscode-tab-inactive: var(--vscode-tab-inactiveBackground);
+  --color-vscode-tab-active:   var(--vscode-tab-activeBackground);
+
+  /* ── Terminal ANSI ── */
+  --color-terminal-blue: var(--terminal-ansiBlue);
+  --color-terminal-cyan: var(--terminal-ansiCyan);
+  --color-terminal-fg:   var(--terminal-foreground);
+
+  /* ── Foregrounds ── */
+  --color-vscode-fg:              var(--vscode-foreground);
+  --color-vscode-fg-desc:         var(--vscode-descriptionForeground);
+  --color-vscode-fg-sidebar:      var(--vscode-sidebar-foreground);
+  --color-vscode-fg-icon:         var(--vscode-icon-foreground);
+  --color-vscode-fg-list-active:  var(--vscode-list-activeSelectionForeground);
+  --color-vscode-fg-tab-active:   var(--vscode-tab-activeForeground);
+  --color-vscode-fg-tab-inactive: var(--vscode-tab-inactiveForeground);
+  --color-vscode-fg-input:        var(--vscode-input-foreground);
+  --color-vscode-fg-titlebar:     var(--vscode-titlebar-foreground);
+  --color-vscode-fg-statusbar:    var(--vscode-statusbar-foreground);
+  --color-vscode-fg-editor:       var(--vscode-editor-foreground);
+  --color-vscode-line-number:     var(--vscode-editorLineNumber-foreground);
+
+  /* ── Borders ── */
+  --color-vscode-border-sidebar:   var(--vscode-sidebar-border);
+  --color-vscode-border-panel:     var(--vscode-panel-border);
+  --color-vscode-border-tab:       var(--vscode-tab-border);
+  --color-vscode-border-input:     var(--vscode-input-border);
+  --color-vscode-border-activity:  var(--vscode-activitybar-border);
+  --color-vscode-border-titlebar:  var(--vscode-titlebar-border);
+  --color-vscode-border-menu:      var(--vscode-menu-border);
+  --color-vscode-border-widget:    var(--vscode-widget-border);
+  --color-vscode-border-statusbar: var(--vscode-statusbar-border);
+  --color-vscode-focus:            var(--vscode-focusBorder);
+
+  /* ── Extra Backgrounds ── */
+  --color-vscode-quick-input: var(--vscode-quickInput-background);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--vscode-window-background);
+  color: var(--vscode-foreground);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--vscode-scrollbarSlider-activeBackground);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ── Focus ───────────────────────────────────────────── */
+:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+/* ── Selection ───────────────────────────────────────── */
+::selection {
+  background: var(--vscode-editor-selectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+/* ── Icon Button (shared) ────────────────────────────── */
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border-radius: var(--radius-xs);
+  transition: background var(--duration-fast) var(--easing-default),
+              color var(--duration-fast) var(--easing-default);
+}
+.icon-btn--panel {
+  width: 22px;
+  height: 22px;
+  color: var(--vscode-icon-foreground);
+}
+.icon-btn--panel:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.icon-btn--search {
+  width: 22px;
+  height: 22px;
+  cursor: default;
+  color: var(--vscode-icon-foreground);
+}
+.icon-btn--search:hover {
+  background: var(--vscode-list-hoverBackground);
+  color: var(--vscode-foreground);
+}
+.icon-btn--titlebar {
+  width: 24px;
+  height: var(--titlebar-height);
+  cursor: default;
+  border-radius: 0;
+  color: var(--vscode-titlebar-inactiveIconForeground);
+}
+.icon-btn--titlebar:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--vscode-titlebar-activeIconForeground);
+}
+.icon-btn--window {
+  width: 35px;
+  height: var(--titlebar-height);
+  cursor: default;
+  border-radius: 0;
+  color: var(--vscode-titlebar-foreground);
+}
+.icon-btn--window:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--vscode-titlebar-activeIconForeground);
+}
+.icon-btn--window-danger:hover {
+  background: var(--vscode-titlebar-closeButton-hoverBackground);
+  color: var(--vscode-titlebar-activeIconForeground);
+}
+
+/* ── Input (shared) ──────────────────────────────────── */
+.vs-input {
+  height: 24px;
+  min-width: 0;
+  padding: 0 6px;
+  outline: none;
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: var(--radius-xs);
+  color: var(--vscode-input-foreground);
+  font-size: var(--font-size-md);
+  font-family: var(--font-ui);
+}
+.vs-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+.vs-input-box {
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: var(--radius-xs);
+}
+.vs-input-box:focus-within {
+  border-color: var(--vscode-focusBorder);
+}
+
+/* ── Activity Bar ────────────────────────────────────── */
+.activity-bar-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--vscode-activitybar-inactiveForeground);
+  transition: color var(--duration-fast) var(--easing-default);
+}
+.activity-bar-btn:hover {
+  color: var(--vscode-activitybar-foreground);
+}
+.activity-bar-btn[data-active="true"] {
+  color: var(--vscode-activitybar-foreground);
+}
+.activity-bar-btn[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--vscode-activitybar-activeBorder);
+}
+
+/* ── Sidebar Section Header ───────────────────────────── */
+
+/* ── Tree View ───────────────────────────────────────── */
+.tree-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 22px;
+  padding: 0 8px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  font-size: var(--font-size-lg);
+  color: var(--vscode-sidebar-foreground);
+  transition: background var(--duration-fast) var(--easing-default);
+}
+.tree-item:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.tree-item[data-selected="true"] {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+/* ── Editor Tabs ─────────────────────────────────────── */
+.editor-tab {
+  display: flex;
+  align-items: center;
+  height: var(--tabbar-height);
+  padding: 0 10px;
+  gap: 6px;
+  background: var(--vscode-tab-inactiveBackground);
+  color: var(--vscode-tab-inactiveForeground);
+  border-right: 1px solid var(--vscode-tab-border);
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: var(--font-size-lg);
+  transition: background var(--duration-fast) var(--easing-default),
+              color var(--duration-fast) var(--easing-default);
+  user-select: none;
+  position: relative;
+}
+.editor-tab:hover:not([data-active="true"]) {
+  background: var(--vscode-tab-inactiveBackground);
+  color: var(--vscode-foreground);
+}
+.editor-tab[data-active="true"] {
+  background: var(--vscode-tab-activeBackground);
+  color: var(--vscode-tab-activeForeground);
+  border-top: 1px solid var(--vscode-tab-activeBorderTop);
+}
+
+/* ── Panel Tabs ──────────────────────────────────────── */
+.panel-tab {
+  display: flex;
+  align-items: center;
+  height: var(--panel-tabbar-height);
+  padding: 0 12px;
+  background: transparent;
+  border: 0;
+  font-size: var(--font-size-md);
+  font-weight: 400;
+  color: var(--vscode-panelTitle-inactiveForeground);
+  cursor: default;
+  font-family: var(--font-ui);
+  user-select: none;
+  white-space: nowrap;
+  position: relative;
+  transition: color var(--duration-fast) var(--easing-default);
+}
+.panel-tab:hover {
+  color: var(--vscode-panelTitle-activeForeground);
+}
+.panel-tab[data-active="true"] {
+  color: var(--vscode-panelTitle-activeForeground);
+  font-weight: 400;
+}
+.panel-tab[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 2px;
+  background: var(--vscode-panelTitle-activeBorder);
+}
+
+/* ── Status Bar Items ────────────────────────────────── */
+.statusbar-item {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 6px;
+  gap: 4px;
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  transition: background var(--duration-fast) var(--easing-default);
+  white-space: nowrap;
+}
+.statusbar-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Section Actions ─────────────────────────────────── */
+.section-actions {
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--easing-default);
+}
+.section-header:hover .section-actions {
+  opacity: 1;
+}
+
+/* ── Tab Close Button ────────────────────────────────── */
+.tab-close {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--easing-default);
+}
+.editor-tab:hover .tab-close,
+.editor-tab[data-active="true"] .tab-close {
+  opacity: 1;
+}
+
+/* ── Title Bar Menu Button ───────────────────────────── */
+.menu-bar-btn {
+  padding: 0 9px;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  color: var(--vscode-titlebar-foreground);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: var(--titlebar-height);
+}
+.menu-bar-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.menu-bar-btn[data-active="true"] {
+  background: rgba(255, 255, 255, 0.09);
+  border-bottom-color: var(--vscode-tab-activeBorderTop);
+}
+
+/* ── Title Bar Nav Button ────────────────────────────── */
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: var(--vscode-titlebar-inactiveIconForeground);
+  cursor: default;
+}
+
+/* ── Command Center Pill ─────────────────────────────── */
+.cmd-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: min(300px, 32vw);
+  height: 24px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: var(--radius-md);
+  color: var(--vscode-titlebar-foreground);
+  cursor: text;
+}
+.cmd-pill[data-active="true"] {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--vscode-focusBorder);
+}
+
+/* ── Menu Dropdown Item ──────────────────────────────── */
+.menu-item {
+  padding-inline: 24px;
+  background: transparent;
+  color: var(--vscode-menu-foreground);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-lg);
+}
+.menu-item:not(:disabled):hover {
+  background: var(--vscode-menu-selectionBackground);
+  color: var(--vscode-menu-selectionForeground);
+}
+
+/* ── Output Toolbar Select ───────────────────────────── */
+.vs-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  height: 24px;
+  min-width: 90px;
+  padding: 0 6px;
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: var(--radius-xs);
+  color: var(--vscode-input-foreground);
+  font-size: var(--font-size-md);
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Terminal Tab ────────────────────────────────────── */
+.terminal-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--panel-tabbar-height);
+  padding: 0 6px 0 8px;
+  background: transparent;
+  color: var(--vscode-panelTitle-inactiveForeground);
+  font-size: var(--font-size-md);
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+  border: 0;
+}
+.terminal-tab[data-active="true"] {
+  color: var(--vscode-foreground);
+}
+
+/* ── Search Toggle (Aa / ab / .*) ────────────────────── */
+.search-toggle {
+  background: transparent;
+  border-radius: var(--radius-xs);
+  color: var(--vscode-foreground);
+  font-family: var(--font-editor);
+  font-size: 12px;
+  line-height: 20px;
+}
+.search-toggle[aria-pressed="true"] {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+/* ── Status Bar Remote Button ────────────────────────── */
+.statusbar-remote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 6px;
+  color: var(--vscode-statusBarItem-remoteForeground);
+  background: var(--vscode-statusBarItem-remoteBackground);
+  border: 0;
+  cursor: pointer;
+}
+.statusbar-remote:hover {
+  filter: brightness(1.12);
+}
+
+/* ── VscodeIcon ──────────────────────────────────────── */
+.vscode-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  background-image: var(--ico-logo);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+/* ── Kbd Shortcut Badge ──────────────────────────────── */
+.kbd-shortcut {
+  background: var(--vscode-keybindingLabel-background);
+  border: 1px solid var(--vscode-keybindingLabel-border);
+  border-radius: 3px;
+  padding: 0 5px;
+  font-size: 11px;
+  color: var(--vscode-keybindingLabel-foreground);
+  font-family: var(--font-ui);
+  line-height: 18px;
 }
