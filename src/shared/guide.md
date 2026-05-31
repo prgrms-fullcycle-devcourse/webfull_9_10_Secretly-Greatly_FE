@@ -45,8 +45,7 @@ shared/
 
 ```mermaid
 graph TD
-    App[app] --> Views[views]
-    Views --> Widgets[widgets]
+    App[app] --> Widgets[widgets]
     Widgets --> Features[features]
     Features --> Entities[entities]
     Entities --> Shared[shared]
@@ -55,7 +54,7 @@ graph TD
 ```
 
 1. **역참조 절대 금지 (최하위 레이어)**
-   * **금지**: `shared` 폴더 안의 파일들은 프로젝트의 어떤 상위 레이어(`app`, `views`, `widgets`, `features`, `entities`) 파일도 `import`할 수 없습니다.
+   * **금지**: `shared` 폴더 안의 파일들은 프로젝트의 어떤 상위 레이어(`app`, `widgets`, `features`, `entities`) 파일도 `import`할 수 없습니다.
    * **이유**: `shared`가 상위 레이어를 역참조하면 아키텍처 결합도가 폭발하며, 순환 의존성(Circular Dependency)으로 인해 모듈이 파괴됩니다.
 2. **세그먼트 간의 참조 허용**
    * **허용**: `shared/ui/button`이 `shared/lib/cn.ts`에 정의된 클래스 병합 함수를 가져와 쓰는 형태는 하위 레이어 내에서의 정상적인 참조로 허용됩니다.
