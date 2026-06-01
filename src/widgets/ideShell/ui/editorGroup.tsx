@@ -90,17 +90,14 @@ export function EditorGroup() {
       </div>
 
       {/* Breadcrumb */}
-      <nav
-        aria-label="Breadcrumb"
-        className="flex shrink-0 items-center gap-1 px-2 text-vscode-fg-desc h-[22px] text-[length:var(--font-size-md)]"
-      >
+      <nav aria-label="Breadcrumb" className="editor-breadcrumb">
         {activeTab.path.map((segment, i) => (
-          <span key={`${i}-${segment}`} className="contents">
+          <span key={`${i}-${segment}`} className="editor-breadcrumb-segment">
             <span>{segment}</span>
             <Codicon icon="codicon-chevron-right" size={14} />
           </span>
         ))}
-        <span className="flex items-center gap-1 text-vscode-fg">
+        <span className="editor-breadcrumb-current">
           <FileIcon filename={activeTab.filename} size={14} />
           {activeTab.filename}
         </span>

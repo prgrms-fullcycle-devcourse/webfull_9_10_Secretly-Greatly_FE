@@ -27,7 +27,7 @@ function SearchToggle({
       aria-label={label}
       aria-pressed={active}
       onClick={onClick}
-      className="search-toggle flex h-[22px] min-w-[22px] shrink-0 cursor-default items-center justify-center border-0 px-0.5 font-semibold"
+      className="search-toggle flex h-5 min-w-5 shrink-0 cursor-default items-center justify-center border-0 px-0.5 font-semibold"
     >
       {children}
     </button>
@@ -44,17 +44,20 @@ function SearchInputRow({
   onToggle: () => void;
 }) {
   return (
-    <div className="flex h-[36px] items-center gap-1">
+    <div
+      className="search-input-row"
+      style={{ display: "flex", alignItems: "center", height: 28, gap: 0 }}
+    >
       <button
         type="button"
         title="Toggle Replace"
         aria-label="Toggle Replace"
         onClick={onToggle}
-        className="flex h-[32px] w-[28px] shrink-0 cursor-default items-center justify-center border-0 bg-transparent p-0 text-vscode-fg-icon"
+        className="search-replace-toggle"
       >
         <Codicon
           icon={expanded ? "codicon-chevron-down" : "codicon-chevron-right"}
-          size={18}
+          size={16}
         />
       </button>
       {children}
@@ -79,10 +82,8 @@ export function SearchView() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex h-[30px] shrink-0 select-none items-center pl-5 pr-1">
-        <span className="flex-1 overflow-hidden truncate uppercase font-bold tracking-[0.04em] text-vscode-fg-sidebar text-[length:var(--font-size-sm)]">
-          SEARCH
-        </span>
+      <div className="sidebar-view-title">
+        <span className="sidebar-view-title-label">SEARCH</span>
         <div className="flex items-center gap-0.5">
           <IconButton
             variant="search"
@@ -118,17 +119,38 @@ export function SearchView() {
       </div>
 
       {/* Inputs */}
-      <div className="flex shrink-0 flex-col gap-1 pb-1 pl-2 pr-3">
+      <div
+        className="search-controls"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          flexShrink: 0,
+          gap: 2,
+          padding: "0 8px 4px 4px",
+        }}
+      >
         <SearchInputRow
           expanded={replaceOpen}
           onToggle={() => setReplaceOpen((prev) => !prev)}
         >
-          <div className="vs-input-box flex h-[32px] min-w-0 flex-1 items-center gap-0.5 ps-2 pe-[6px]">
+          <div
+            className="vs-input-box search-field"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              flex: 1,
+              minWidth: 0,
+              height: 26,
+              gap: 2,
+              paddingLeft: 8,
+              paddingRight: 4,
+            }}
+          >
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search"
-              className="min-w-0 flex-1 border-0 bg-transparent p-0 outline-none text-vscode-fg-input font-sans text-[13px] leading-6"
+              className="min-w-0 flex-1 border-0 bg-transparent p-0 outline-none text-vscode-fg-input font-sans text-[13px] leading-5"
             />
             <SearchToggle
               active={options.caseSensitive}
@@ -155,32 +177,47 @@ export function SearchView() {
         </SearchInputRow>
 
         {replaceOpen && (
-          <div className="flex h-[36px] items-center gap-1">
-            <span className="w-[28px] shrink-0" />
-            <div className="vs-input-box flex h-[32px] min-w-0 flex-1 items-center gap-0.5 ps-2 pe-[6px]">
+          <div
+            className="search-input-row"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              height: 28,
+              gap: 0,
+            }}
+          >
+            <span className="search-replace-spacer" />
+            <div
+              className="vs-input-box search-field"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flex: 1,
+                minWidth: 0,
+                height: 26,
+                gap: 2,
+                paddingLeft: 8,
+                paddingRight: 4,
+              }}
+            >
               <input
                 value={replace}
                 onChange={(event) => setReplace(event.target.value)}
                 placeholder="Replace"
-                className="min-w-0 flex-1 border-0 bg-transparent p-0 outline-none text-vscode-fg-input font-sans text-[13px] leading-6"
-              />
-              <IconButton
-                variant="panel"
-                iconSize={14}
-                icon="codicon-replace"
-                label="Replace (Enter)"
-              />
-              <IconButton
-                variant="panel"
-                iconSize={14}
-                icon="codicon-preserve-case"
-                label="Preserve Case"
+                className="min-w-0 flex-1 border-0 bg-transparent p-0 outline-none text-vscode-fg-input font-sans text-[13px] leading-5"
               />
             </div>
+            <IconButton
+              variant="search"
+              iconSize={16}
+              icon="codicon-preserve-case"
+              label="Preserve Case"
+              className="search-preserve-action"
+            />
           </div>
         )}
 
-        <div className="flex h-[18px] justify-end pr-1">
+        <div className="search-more-row">
           <IconButton
             variant="search"
             iconSize={14}
@@ -191,9 +228,9 @@ export function SearchView() {
       </div>
 
       {/* Results */}
-      <div className="flex-1 overflow-auto text-vscode-fg-desc text-[length:var(--font-size-lg)] px-2 py-1">
+      <div className="search-results">
         {!query ? (
-          <div className="select-none py-8 text-center text-[13px]">
+          <div className="select-none text-[13px]">
             Search for text in the workspace
           </div>
         ) : (

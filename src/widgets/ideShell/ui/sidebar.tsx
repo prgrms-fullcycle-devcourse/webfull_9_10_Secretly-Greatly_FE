@@ -34,21 +34,21 @@ function SectionHeader({
 }) {
   return (
     <div
-      className={`section-header h-[22px] flex items-center px-2 gap-0.5 shrink-0${topBorder ? " border-t border-vscode-border-sidebar" : ""}`}
+      className={`section-header h-[22px] flex items-center shrink-0${topBorder ? " border-t border-vscode-border-sidebar" : ""}`}
     >
       {/* toggle button spans full width minus the action icons */}
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="flex flex-1 items-center gap-0.5 min-w-0 border-0 bg-transparent p-0 cursor-pointer select-none"
+        className="flex h-full flex-1 items-center gap-0.5 min-w-0 border-0 bg-transparent py-0 pl-1 pr-2 cursor-pointer select-none text-left"
       >
         <Codicon
           icon={expanded ? "codicon-chevron-down" : "codicon-chevron-right"}
           size={16}
           className="shrink-0 text-vscode-fg-icon"
         />
-        <span className="uppercase font-bold tracking-[0.04em] flex-1 overflow-hidden truncate whitespace-nowrap text-vscode-fg-sidebar text-[length:var(--font-size-sm)]">
+        <span className="min-w-0 overflow-hidden truncate whitespace-nowrap uppercase font-bold tracking-[0.04em] text-vscode-fg-sidebar text-[length:var(--font-size-sm)]">
           {label}
         </span>
       </button>
@@ -78,7 +78,7 @@ function ExplorerView() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <SectionHeader
-        label="webfull_9_10_Secretly-Greatly_FE"
+        label="Secretly_Greatly"
         expanded={folderOpen}
         onToggle={() => setFolderOpen((v) => !v)}
         actions={[
@@ -113,6 +113,7 @@ function ExplorerView() {
 
 interface Props {
   view: string | null;
+  width: number;
 }
 
 function renderContent(view: string) {
@@ -125,7 +126,7 @@ function renderContent(view: string) {
   );
 }
 
-export function Sidebar({ view }: Props) {
+export function Sidebar({ view, width }: Props) {
   if (!view) return null;
 
   const title = view === "explorer" ? "Explorer" : (STUB_VIEWS[view] ?? view);
@@ -134,17 +135,16 @@ export function Sidebar({ view }: Props) {
     <aside
       aria-label={title}
       className="shrink-0 overflow-hidden flex flex-col bg-vscode-sidebar text-vscode-fg-sidebar w-[var(--sidebar-width)] border-r border-vscode-border-sidebar z-[var(--z-sidebar)]"
+      style={{ width }}
     >
       {/* View Title — search has its own header */}
       {view !== "search" && (
-        <div className="h-[35px] flex items-center justify-between shrink-0 select-none px-5 text-[length:var(--font-size-sm)] font-normal">
-          <span className="uppercase tracking-[0.04em] text-vscode-fg-sidebar">
-            {title}
-          </span>
+        <div className="sidebar-view-title">
+          <span className="sidebar-view-title-label">{title}</span>
           <IconButton
             variant="panel"
             icon="codicon-ellipsis"
-            label="Views and More Actions…"
+            label="Views and More Actions"
             iconSize={16}
           />
         </div>

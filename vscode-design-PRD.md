@@ -1099,7 +1099,7 @@ src > components > Button.tsx > Button
 패널 탭바는 **좌우 두 영역**으로 나뉜다.
 
 ```txt
-[PROBLEMS][OUTPUT][DEBUG CONSOLE][TERMINAL]     [● webfull_9_10_Secretly-Greatly_FE ×] | [+][˅][Split][Maximize][×]
+[PROBLEMS][OUTPUT][DEBUG CONSOLE][TERMINAL]     [● Secretly_Greatly ×] | [+][˅][Split][Maximize][×]
 └── 섹션 선택 탭 (왼쪽)                           └── 인스턴스 탭 + 액션 버튼 (오른쪽, TERMINAL 활성 시만)
 ```
 
