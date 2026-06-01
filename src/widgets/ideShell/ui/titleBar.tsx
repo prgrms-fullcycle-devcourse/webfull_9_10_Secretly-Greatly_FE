@@ -357,7 +357,7 @@ export function TitleBar() {
                     setQuickOpenIndex(0);
                   }}
                   placeholder="Search files by name (append : to go to line or @ to go to symbol)"
-                  className="flex-1 bg-transparent border-0 outline-none min-w-0 text-vscode-fg text-[12px] font-sans"
+                  className="quick-open-input flex-1 bg-transparent border-0 outline-none min-w-0 text-vscode-fg text-[12px] font-sans"
                 />
               ) : (
                 <span className="flex-1 text-[12px] opacity-[0.86]">

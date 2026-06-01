@@ -5,11 +5,6 @@ import { Codicon, Divider, IconButton, Input } from "@/shared/ui";
 
 type PanelTab = "PROBLEMS" | "OUTPUT" | "DEBUG CONSOLE" | "TERMINAL" | "PORTS";
 
-interface TerminalInstance {
-  id: string;
-  name: string;
-}
-
 function ProblemsToolbar() {
   return (
     <div className="flex items-center gap-0.5 px-1">
@@ -97,28 +92,13 @@ function PortsToolbar() {
   );
 }
 
-function TerminalToolbar({
-  instances,
-  activeKey,
-  onSelect,
-}: {
-  instances: TerminalInstance[];
-  activeKey: string;
-  onSelect: (id: string) => void;
-}) {
+function TerminalToolbar() {
   return (
     <div className="flex h-full items-center pr-1">
-      {instances.map((terminal) => (
-        <button
-          key={terminal.id}
-          onClick={() => onSelect(terminal.id)}
-          className="terminal-tab"
-          data-active={activeKey === terminal.id}
-        >
-          <Codicon icon="codicon-terminal" size={18} className="shrink-0" />
-          <span>powershell - {terminal.name}</span>
-        </button>
-      ))}
+      <button className="terminal-tab" data-active="true">
+        <Codicon icon="codicon-terminal" size={18} className="shrink-0" />
+        <span>powershell</span>
+      </button>
 
       <div className="flex h-full items-center gap-0.5 px-1">
         <IconButton
@@ -166,12 +146,12 @@ const PANEL_TABS: PanelTab[] = [
   "PORTS",
 ];
 
-export function PanelArea() {
+interface PanelAreaProps {
+  height: number;
+}
+
+export function PanelArea({ height }: PanelAreaProps) {
   const [activeTab, setActiveTab] = useState<PanelTab>("TERMINAL");
-  const [terminals] = useState<TerminalInstance[]>([
-    { id: "1", name: "webfull_9_10_Secretly-Greatly_FE" },
-  ]);
-  const [activeTerminal, setActiveTerminal] = useState("1");
 
   function renderToolbar() {
     switch (activeTab) {
@@ -184,18 +164,15 @@ export function PanelArea() {
       case "PORTS":
         return <PortsToolbar />;
       default:
-        return (
-          <TerminalToolbar
-            instances={terminals}
-            activeKey={activeTerminal}
-            onSelect={setActiveTerminal}
-          />
-        );
+        return <TerminalToolbar />;
     }
   }
 
   return (
-    <div className="flex shrink-0 flex-col overflow-hidden h-[var(--panel-height)] bg-vscode-panel border-t border-vscode-border-panel z-[var(--z-panel)]">
+    <div
+      className="flex shrink-0 flex-col overflow-hidden h-[var(--panel-height)] bg-vscode-panel border-t border-vscode-border-panel z-[var(--z-panel)]"
+      style={{ height }}
+    >
       {/* Tab Bar */}
       <div className="flex shrink-0 items-center overflow-hidden justify-between h-[var(--panel-tabbar-height)] border-b border-vscode-border-panel">
         <div
@@ -245,30 +222,30 @@ export function PanelArea() {
         id="panel-content"
         role="tabpanel"
         aria-labelledby={`panel-tab-${activeTab.replace(/\s+/g, "-")}`}
-        className="flex-1 overflow-auto px-2 py-1 font-mono text-[13px] leading-[18px] text-terminal-fg"
+        className={`panel-content${activeTab === "DEBUG CONSOLE" ? " panel-content-debug" : ""}`}
       >
         {activeTab === "PROBLEMS" && (
-          <div className="text-vscode-fg-desc px-1 py-2 text-[13px]">
+          <div className="text-vscode-fg-desc text-[13px]">
             No problems have been detected in the workspace.
           </div>
         )}
         {activeTab === "OUTPUT" && (
-          <div className="text-vscode-fg-desc px-1 py-2 text-[13px]">
+          <div className="text-vscode-fg-desc text-[13px]">
             Select a task to see its output.
           </div>
         )}
         {activeTab === "DEBUG CONSOLE" && (
-          <div className="flex h-full flex-col">
-            <div className="flex-1 overflow-auto text-vscode-fg-desc text-[13px]" />
-            <div className="flex shrink-0 items-center gap-1.5 border-t border-vscode-border-panel pt-1">
+          <div className="debug-console">
+            <div className="debug-console-output" />
+            <div className="debug-console-input-row">
               <Codicon
                 icon="codicon-chevron-right"
                 size={16}
-                className="shrink-0 text-vscode-fg-icon"
+                className="debug-console-prompt"
               />
               <input
                 placeholder="Please start a debug session to evaluate expressions"
-                className="min-w-0 flex-1 border-0 bg-transparent outline-none text-vscode-fg-input font-mono text-[13px]"
+                className="debug-console-input"
               />
             </div>
           </div>
@@ -278,14 +255,14 @@ export function PanelArea() {
             <span className="text-terminal-cyan">user@screet</span>
             <span className="text-vscode-fg">:</span>
             <span className="text-terminal-blue">
-              ~/screet/webfull_9_10_Secretly-Greatly_FE
+              ~/screet/Secretly_Greatly
             </span>
             <span className="text-vscode-fg"> $ </span>
             <span className="text-vscode-fg-editor">pnpm dev</span>
           </div>
         )}
         {activeTab === "PORTS" && (
-          <div className="text-vscode-fg-desc px-1 py-2 text-[13px]">
+          <div className="text-vscode-fg-desc text-[13px]">
             No forwarded ports. Forward a port to access your locally running
             services over the internet.
           </div>

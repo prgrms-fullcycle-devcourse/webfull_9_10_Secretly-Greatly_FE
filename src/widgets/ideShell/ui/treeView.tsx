@@ -76,13 +76,14 @@ function TreeItem({ node, depth, selectedKey, onSelect }: TreeItemProps) {
         aria-selected={isSelected}
         aria-level={depth + 1}
         className="tree-item"
+        data-folder={isFolder}
         data-selected={isSelected}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         style={{ paddingLeft: 8 + depth * 16 }}
       >
         {/* twistie */}
-        <span className="w-4 shrink-0 flex items-center text-vscode-fg-icon">
+        <span className="tree-twistie">
           {isFolder && (
             <Codicon
               icon={expanded ? "codicon-chevron-down" : "codicon-chevron-right"}
@@ -93,12 +94,12 @@ function TreeItem({ node, depth, selectedKey, onSelect }: TreeItemProps) {
 
         {/* file icon (folders show no icon) */}
         {!isFolder && (
-          <span className="mr-1.5 flex items-center" aria-hidden="true">
-            <FileIcon filename={node.name} size={16} />
+          <span className="tree-file-icon" aria-hidden="true">
+            <FileIcon filename={node.name} size={14} />
           </span>
         )}
 
-        <span>{node.name}</span>
+        <span className="tree-label">{node.name}</span>
       </button>
 
       {isFolder &&

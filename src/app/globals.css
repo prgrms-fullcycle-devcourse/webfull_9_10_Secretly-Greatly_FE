@@ -124,7 +124,128 @@ body {
   color: var(--vscode-list-activeSelectionForeground);
 }
 
+body[data-resizing="sidebar"],
+body[data-resizing="sidebar"] * {
+  cursor: ew-resize !important;
+  user-select: none !important;
+}
+body[data-resizing="panel"],
+body[data-resizing="panel"] * {
+  cursor: ns-resize !important;
+  user-select: none !important;
+}
+
+.resize-handle {
+  flex-shrink: 0;
+  background: transparent;
+  z-index: var(--z-drag-overlay);
+  transition: background var(--duration-fast) var(--easing-default);
+}
+.resize-handle:hover,
+.resize-handle:focus-visible,
+body[data-resizing] .resize-handle:hover {
+  background: var(--vscode-focusBorder);
+}
+.resize-handle-vertical {
+  width: 4px;
+  cursor: ew-resize;
+  margin-left: -2px;
+  margin-right: -2px;
+}
+.resize-handle-horizontal {
+  height: 4px;
+  cursor: ns-resize;
+  margin-top: -2px;
+  margin-bottom: -2px;
+}
+
+.search-controls {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px 4px 4px;
+}
+.search-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 28px;
+}
+.search-replace-toggle,
+.search-replace-spacer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 28px;
+}
+.search-replace-toggle {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--vscode-icon-foreground);
+  cursor: default;
+}
+.search-field {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  gap: 2px;
+  padding-left: 8px;
+  padding-right: 4px;
+}
+.search-preserve-action {
+  margin-left: 4px;
+  color: var(--vscode-icon-foreground);
+  opacity: 0.9;
+}
+.search-more-row {
+  display: flex;
+  justify-content: flex-end;
+  height: 18px;
+}
+.search-results {
+  flex: 1;
+  overflow: auto;
+  padding: 2px 8px 0 28px;
+  color: var(--vscode-descriptionForeground);
+  font-size: var(--font-size-md);
+}
+
 /* ── Icon Button (shared) ────────────────────────────── */
+.editor-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 22px;
+  padding: 0 12px;
+  gap: 4px;
+  overflow: hidden;
+  background: var(--vscode-editor-background);
+  color: var(--vscode-descriptionForeground);
+  font-size: var(--font-size-md);
+  white-space: nowrap;
+  user-select: none;
+}
+.editor-breadcrumb-segment,
+.editor-breadcrumb-current {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
+}
+.editor-breadcrumb-segment {
+  flex-shrink: 0;
+}
+.editor-breadcrumb-current {
+  overflow: hidden;
+  color: var(--vscode-foreground);
+}
+
 .icon-btn {
   display: flex;
   align-items: center;
@@ -208,6 +329,19 @@ body {
 }
 
 /* ── Activity Bar ────────────────────────────────────── */
+.vs-input-box input,
+.vs-input-box input:focus,
+.vs-input-box input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.quick-open-input,
+.quick-open-input:focus,
+.quick-open-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .activity-bar-btn {
   position: relative;
   display: flex;
@@ -240,6 +374,29 @@ body {
 /* ── Sidebar Section Header ───────────────────────────── */
 
 /* ── Tree View ───────────────────────────────────────── */
+.sidebar-view-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  height: 35px;
+  padding-left: 20px;
+  padding-right: 8px;
+  user-select: none;
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+}
+.sidebar-view-title-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--vscode-sidebar-foreground);
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
 .tree-item {
   display: flex;
   align-items: center;
@@ -255,6 +412,28 @@ body {
   font-size: var(--font-size-lg);
   color: var(--vscode-sidebar-foreground);
   transition: background var(--duration-fast) var(--easing-default);
+}
+.tree-twistie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  width: 16px;
+  margin-right: 5px;
+  color: var(--vscode-icon-foreground);
+}
+.tree-file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  margin-right: 6px;
+}
+.tree-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tree-item:hover {
   background: var(--vscode-list-hoverBackground);
@@ -300,7 +479,7 @@ body {
   padding: 0 12px;
   background: transparent;
   border: 0;
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   font-weight: 400;
   color: var(--vscode-panelTitle-inactiveForeground);
   cursor: default;
@@ -327,7 +506,61 @@ body {
   background: var(--vscode-panelTitle-activeBorder);
 }
 
+.panel-content {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 20px 0;
+  font-family: var(--font-editor);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--terminal-foreground);
+}
+
 /* ── Status Bar Items ────────────────────────────────── */
+.panel-content-debug {
+  overflow: hidden;
+  padding: 0;
+}
+.debug-console {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.debug-console-output {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.debug-console-input-row {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 100%;
+  height: 24px;
+  padding: 0 20px 0 14px;
+  gap: 6px;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+.debug-console-prompt {
+  flex-shrink: 0;
+  color: var(--vscode-icon-foreground);
+}
+.debug-console-input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--vscode-input-foreground);
+  font-family: var(--font-editor);
+  font-size: 13px;
+  line-height: 18px;
+}
+.debug-console-input::placeholder {
+  color: var(--vscode-descriptionForeground);
+}
+
 .statusbar-item {
   display: flex;
   align-items: center;
@@ -341,6 +574,11 @@ body {
 }
 .statusbar-item:hover {
   background: rgba(255, 255, 255, 0.12);
+}
+.statusbar-item-icon {
+  justify-content: center;
+  min-width: 28px;
+  padding: 0 7px;
 }
 
 /* ── Section Actions ─────────────────────────────────── */
@@ -504,12 +742,13 @@ body {
 
 /* ── VscodeIcon ──────────────────────────────────────── */
 .vscode-icon {
-  display: inline-block;
+  display: block;
   flex-shrink: 0;
   background-image: var(--ico-logo);
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
+  transform: translateY(-1px);
 }
 
 /* ── Kbd Shortcut Badge ──────────────────────────────── */

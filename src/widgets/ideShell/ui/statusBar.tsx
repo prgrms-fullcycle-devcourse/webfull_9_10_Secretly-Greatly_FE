@@ -45,6 +45,13 @@ export function StatusBar() {
         <button className="statusbar-item" title="Change Language Mode">
           TypeScript React
         </button>
+        <button
+          className="statusbar-item statusbar-item-icon"
+          title="Notifications"
+          aria-label="Notifications"
+        >
+          <Codicon icon="codicon-bell" size={14} />
+        </button>
       </div>
     </footer>
   );
