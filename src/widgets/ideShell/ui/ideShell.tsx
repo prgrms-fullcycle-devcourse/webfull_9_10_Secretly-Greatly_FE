@@ -19,7 +19,8 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function IdeShell() {
-  const [activeView, setActiveView] = useState<string | null>("explorer");
+  const [activeView, setActiveView] = useState<string | null>(null);
+  const [editorView, setEditorView] = useState<"welcome" | "editor">("editor");
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [panelHeight, setPanelHeight] = useState(220);
 
@@ -120,7 +121,10 @@ export function IdeShell() {
 
         {/* main-area: editor + panel vertical split */}
         <div className="flex flex-col flex-1 overflow-hidden">
-          <EditorGroup />
+          <EditorGroup
+            view={editorView}
+            onAllTabsClosed={() => setEditorView("welcome")}
+          />
           <div
             role="separator"
             aria-orientation="horizontal"

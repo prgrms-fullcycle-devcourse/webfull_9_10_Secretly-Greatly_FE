@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AuthPanel } from "@/features/auth/ui";
 import { Codicon, IconButton } from "@/shared/ui";
 import { TreeView } from "./treeView";
 import { SearchView } from "./searchView";
@@ -119,6 +120,7 @@ interface Props {
 function renderContent(view: string) {
   if (view === "explorer") return <ExplorerView />;
   if (view === "search") return <SearchView />;
+  if (view === "account") return <AuthPanel />;
   return (
     <div className="flex-1 flex items-center justify-center text-vscode-fg-desc text-[length:var(--font-size-md)]">
       {STUB_VIEWS[view] ?? view}
