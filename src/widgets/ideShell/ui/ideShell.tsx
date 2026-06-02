@@ -2,10 +2,7 @@
 
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useState } from "react";
-import {
-  NotificationCenter,
-  type NotificationItem,
-} from "@/shared/ui/notificationCenter";
+import { NotificationCenter, type NotificationItem } from "@/shared/ui";
 import { ActivityBar } from "./activityBar";
 import { EditorGroup } from "./editorGroup";
 import { MOCK_NOTIFICATIONS } from "./mockData";

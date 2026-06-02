@@ -1,4 +1,4 @@
-import type { NotificationItem } from "@/shared/ui/notificationCenter";
+import type { NotificationItem } from "@/shared/ui";
 import type { TreeNode } from "./treeView";
 
 /* ─────────────────────────────────────────────────────────
