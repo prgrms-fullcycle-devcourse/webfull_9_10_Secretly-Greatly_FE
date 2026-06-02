@@ -1,3 +1,4 @@
+import type { NotificationItem } from "@/shared/ui/notificationCenter";
 import type { TreeNode } from "./treeView";
 
 /* ─────────────────────────────────────────────────────────
@@ -293,5 +294,24 @@ export const RECENT_FILES: RecentFile[] = [
     iconColor: "#d4a953",
     name: "LICENSE",
     path: "Secretly_Greatly",
+  },
+];
+
+/* ─────────────────────────────────────────────────────────
+   Notifications (기본 샘플 — 실제 데이터로 교체하세요)
+───────────────────────────────────────────────────────── */
+export const MOCK_NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: "1",
+    severity: "error",
+    message: "BTC-KRW 변동성 임계치 도달 (-3.42% · 15분).",
+    source: "Terminal Alert",
+    actions: [{ label: "Open", primary: true }],
+  },
+  {
+    id: "2",
+    message: "삼성전자 어제 대비 (+3.58% · 5분).",
+    source: "Market Stock",
+    actions: [{ label: "Open", primary: true }],
   },
 ];

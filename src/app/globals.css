@@ -12,62 +12,64 @@
   --font-mono: var(--font-editor);
 
   /* ── Backgrounds ── */
-  --color-vscode-window:      var(--vscode-window-background);
-  --color-vscode-titlebar:    var(--vscode-titlebar-background);
+  --color-vscode-window: var(--vscode-window-background);
+  --color-vscode-titlebar: var(--vscode-titlebar-background);
   --color-vscode-activitybar: var(--vscode-activitybar-background);
-  --color-vscode-sidebar:     var(--vscode-sidebar-background);
-  --color-vscode-editor:      var(--vscode-editor-background);
-  --color-vscode-panel:       var(--vscode-panel-background);
-  --color-vscode-statusbar:   var(--vscode-statusbar-background);
-  --color-vscode-input:       var(--vscode-input-background);
-  --color-vscode-menu:        var(--vscode-menu-background);
-  --color-vscode-list-hover:  var(--vscode-list-hoverBackground);
+  --color-vscode-sidebar: var(--vscode-sidebar-background);
+  --color-vscode-editor: var(--vscode-editor-background);
+  --color-vscode-panel: var(--vscode-panel-background);
+  --color-vscode-statusbar: var(--vscode-statusbar-background);
+  --color-vscode-input: var(--vscode-input-background);
+  --color-vscode-menu: var(--vscode-menu-background);
+  --color-vscode-list-hover: var(--vscode-list-hoverBackground);
   --color-vscode-list-active: var(--vscode-list-activeSelectionBackground);
   --color-vscode-tab-inactive: var(--vscode-tab-inactiveBackground);
-  --color-vscode-tab-active:   var(--vscode-tab-activeBackground);
+  --color-vscode-tab-active: var(--vscode-tab-activeBackground);
 
   /* ── Terminal ANSI ── */
   --color-terminal-blue: var(--terminal-ansiBlue);
   --color-terminal-cyan: var(--terminal-ansiCyan);
-  --color-terminal-fg:   var(--terminal-foreground);
+  --color-terminal-fg: var(--terminal-foreground);
 
   /* ── Foregrounds ── */
-  --color-vscode-fg:              var(--vscode-foreground);
-  --color-vscode-fg-desc:         var(--vscode-descriptionForeground);
-  --color-vscode-fg-sidebar:      var(--vscode-sidebar-foreground);
-  --color-vscode-fg-icon:         var(--vscode-icon-foreground);
-  --color-vscode-fg-list-active:  var(--vscode-list-activeSelectionForeground);
-  --color-vscode-fg-tab-active:   var(--vscode-tab-activeForeground);
+  --color-vscode-fg: var(--vscode-foreground);
+  --color-vscode-fg-desc: var(--vscode-descriptionForeground);
+  --color-vscode-fg-sidebar: var(--vscode-sidebar-foreground);
+  --color-vscode-fg-icon: var(--vscode-icon-foreground);
+  --color-vscode-fg-list-active: var(--vscode-list-activeSelectionForeground);
+  --color-vscode-fg-tab-active: var(--vscode-tab-activeForeground);
   --color-vscode-fg-tab-inactive: var(--vscode-tab-inactiveForeground);
-  --color-vscode-fg-input:        var(--vscode-input-foreground);
-  --color-vscode-fg-titlebar:     var(--vscode-titlebar-foreground);
-  --color-vscode-fg-statusbar:    var(--vscode-statusbar-foreground);
-  --color-vscode-fg-editor:       var(--vscode-editor-foreground);
-  --color-vscode-line-number:     var(--vscode-editorLineNumber-foreground);
+  --color-vscode-fg-input: var(--vscode-input-foreground);
+  --color-vscode-fg-titlebar: var(--vscode-titlebar-foreground);
+  --color-vscode-fg-statusbar: var(--vscode-statusbar-foreground);
+  --color-vscode-fg-editor: var(--vscode-editor-foreground);
+  --color-vscode-line-number: var(--vscode-editorLineNumber-foreground);
 
   /* ── Borders ── */
-  --color-vscode-border-sidebar:   var(--vscode-sidebar-border);
-  --color-vscode-border-panel:     var(--vscode-panel-border);
-  --color-vscode-border-tab:       var(--vscode-tab-border);
-  --color-vscode-border-input:     var(--vscode-input-border);
-  --color-vscode-border-activity:  var(--vscode-activitybar-border);
-  --color-vscode-border-titlebar:  var(--vscode-titlebar-border);
-  --color-vscode-border-menu:      var(--vscode-menu-border);
-  --color-vscode-border-widget:    var(--vscode-widget-border);
+  --color-vscode-border-sidebar: var(--vscode-sidebar-border);
+  --color-vscode-border-panel: var(--vscode-panel-border);
+  --color-vscode-border-tab: var(--vscode-tab-border);
+  --color-vscode-border-input: var(--vscode-input-border);
+  --color-vscode-border-activity: var(--vscode-activitybar-border);
+  --color-vscode-border-titlebar: var(--vscode-titlebar-border);
+  --color-vscode-border-menu: var(--vscode-menu-border);
+  --color-vscode-border-widget: var(--vscode-widget-border);
   --color-vscode-border-statusbar: var(--vscode-statusbar-border);
-  --color-vscode-focus:            var(--vscode-focusBorder);
+  --color-vscode-focus: var(--vscode-focusBorder);
 
   /* ── Extra Backgrounds ── */
   --color-vscode-quick-input: var(--vscode-quickInput-background);
 }
 
 /* ── Base ────────────────────────────────────────────── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html,
@@ -255,8 +257,9 @@ body[data-resizing] .resize-handle:hover {
   cursor: pointer;
   background: transparent;
   border-radius: var(--radius-xs);
-  transition: background var(--duration-fast) var(--easing-default),
-              color var(--duration-fast) var(--easing-default);
+  transition:
+    background var(--duration-fast) var(--easing-default),
+    color var(--duration-fast) var(--easing-default);
 }
 .icon-btn--panel {
   width: 22px;
@@ -456,8 +459,9 @@ body[data-resizing] .resize-handle:hover {
   cursor: pointer;
   white-space: nowrap;
   font-size: var(--font-size-lg);
-  transition: background var(--duration-fast) var(--easing-default),
-              color var(--duration-fast) var(--easing-default);
+  transition:
+    background var(--duration-fast) var(--easing-default),
+    color var(--duration-fast) var(--easing-default);
   user-select: none;
   position: relative;
 }
@@ -654,7 +658,7 @@ body[data-resizing] .resize-handle:hover {
   cursor: text;
 }
 .cmd-pill[data-active="true"] {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
   border-color: var(--vscode-focusBorder);
 }
 
