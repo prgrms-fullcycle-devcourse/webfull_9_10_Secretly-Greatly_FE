@@ -170,11 +170,11 @@ export function PanelArea({ height }: PanelAreaProps) {
 
   return (
     <div
-      className="flex shrink-0 flex-col overflow-hidden h-[var(--panel-height)] bg-vscode-panel border-t border-vscode-border-panel z-[var(--z-panel)]"
+      className="flex shrink-0 flex-col overflow-hidden h-(--panel-height) bg-vscode-panel border-t border-vscode-border-panel z-(--z-panel)"
       style={{ height }}
     >
       {/* Tab Bar */}
-      <div className="flex shrink-0 items-center overflow-hidden justify-between h-[var(--panel-tabbar-height)] border-b border-vscode-border-panel">
+      <div className="flex shrink-0 items-center overflow-hidden justify-between h-(--panel-tabbar-height) border-b border-vscode-border-panel">
         <div
           role="tablist"
           aria-label="Panel"

@@ -3,14 +3,12 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useState } from "react";
 import { NotificationCenter, type NotificationItem } from "@/shared/ui";
-import type { TreeFileOpenPayload } from "./treeView";
-import { ActivityBar } from "./activityBar";
-import { EditorGroup } from "./editorGroup";
-import { MOCK_NOTIFICATIONS, type MockTab } from "./mockData";
-import { PanelArea } from "./panelArea";
-import { Sidebar } from "./sidebar";
-import { StatusBar } from "./statusBar";
-import { TitleBar } from "./titleBar";
+import type { TreeFileOpenPayload } from "@/widgets/sidebar";
+import { EditorGroup } from "@/widgets/editorPanel";
+import { MOCK_NOTIFICATIONS, type MockTab } from "@/widgets/mockData";
+import { PanelArea } from "@/widgets/terminalPanel";
+import { Sidebar } from "@/widgets/sidebar";
+import { ActivityBar, StatusBar, TitleBar } from "./bar";
 
 const SIDEBAR_MIN_WIDTH = 180;
 const SIDEBAR_MAX_WIDTH = 560;

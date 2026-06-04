@@ -32,7 +32,7 @@ export function ActivityBar({ activeView, onViewChange }: Props) {
   return (
     <aside
       aria-label="Activity Bar"
-      className="flex flex-col items-center shrink-0 w-[var(--activitybar-width)] bg-vscode-activitybar border-r border-vscode-border-activity z-[var(--z-sidebar)]"
+      className="flex flex-col items-center shrink-0 w-(--activitybar-width) bg-vscode-activitybar border-r border-vscode-border-activity z-(--z-sidebar)"
     >
       <div className="flex-1 flex flex-col">
         {TOP_ITEMS.map(({ id, icon, label }) => (

@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Codicon, IconButton, VscodeIcon } from "@/shared/ui";
-import { QuickOpen } from "./quickOpen";
-import { QUICK_ACTIONS, RECENT_FILES } from "./mockData";
+import { QuickOpen } from "@/widgets/editorPanel";
+import { QUICK_ACTIONS, RECENT_FILES } from "@/widgets/mockData";
 
 type MenuItem =
   | { type: "item"; label: string; shortcut?: string; disabled?: boolean }
@@ -134,8 +134,8 @@ function MenuDropdown({
       role="menu"
       aria-label={menuName}
       className="fixed overflow-hidden list-none p-0 m-0 bg-vscode-menu border border-vscode-border-menu
-                 rounded-[var(--radius-sm)] shadow-[var(--shadow-overlay)]
-                 z-[var(--z-dropdown)] min-w-[240px] py-1"
+                 rounded-sm shadow-(--shadow-overlay)
+                 z-(--z-dropdown) min-w-[240px] py-1"
       style={{ top: anchorRect.bottom, left: anchorRect.left }}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -145,7 +145,7 @@ function MenuDropdown({
             <li
               key={index}
               role="separator"
-              className="h-px bg-[var(--vscode-menu-separatorBackground)] my-1 mx-2"
+              className="h-px bg-(--vscode-menu-separatorBackground) my-1 mx-2"
             />
           );
         }
@@ -160,7 +160,7 @@ function MenuDropdown({
             >
               <span>{item.label}</span>
               {item.type === "item" && item.shortcut && (
-                <span className="whitespace-nowrap text-vscode-fg-desc text-[length:var(--font-size-md)]">
+                <span className="whitespace-nowrap text-vscode-fg-desc text-(length:--font-size-md)">
                   {item.shortcut}
                 </span>
               )}
@@ -274,8 +274,8 @@ export function TitleBar() {
     <>
       <header
         className="shrink-0 select-none relative
-                   h-[var(--titlebar-height)] bg-vscode-titlebar text-vscode-fg-titlebar
-                   text-[length:var(--font-size-md)] z-[var(--z-titlebar)]
+                   h-(--titlebar-height) bg-vscode-titlebar text-vscode-fg-titlebar
+                   text-(length:--font-size-md) z-(--z-titlebar)
                    grid grid-cols-[auto_minmax(260px,1fr)_auto] items-center
                    border-b border-vscode-border-titlebar"
       >

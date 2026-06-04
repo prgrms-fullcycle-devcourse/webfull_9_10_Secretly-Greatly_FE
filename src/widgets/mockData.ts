@@ -1,5 +1,5 @@
 import type { NotificationItem } from "@/shared/ui";
-import type { TreeNode } from "./treeView";
+import type { TreeNode } from "@/widgets/sidebar";
 
 /* ─────────────────────────────────────────────────────────
    Editor Group

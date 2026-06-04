@@ -1,6 +1,6 @@
 import { TabbedEditor } from "./tabbedEditor";
 import { WelcomePage } from "./welcomePage";
-import type { MockTab } from "./mockData";
+import type { MockTab } from "@/widgets/mockData";
 
 interface EditorGroupProps {
   tabs: MockTab[];

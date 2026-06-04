@@ -1,7 +1,7 @@
 "use client";
 
 import { Codicon, FileIcon } from "@/shared/ui";
-import type { MockTab } from "./mockData";
+import type { MockTab } from "@/widgets/mockData";
 
 interface TabbedEditorProps {
   tabs: MockTab[];
@@ -23,7 +23,7 @@ export function TabbedEditor({
       <div
         role="tablist"
         aria-label="Editor tabs"
-        className="flex shrink-0 items-end overflow-hidden bg-vscode-tab-inactive h-[var(--tabbar-height)]"
+        className="flex shrink-0 items-end overflow-hidden bg-vscode-tab-inactive h-(--tabbar-height)"
         onKeyDown={(event) => {
           if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
           if ((event.target as Element).closest(".tab-close")) return;
@@ -112,7 +112,7 @@ export function TabbedEditor({
             <div key={`${activeTab.id}-${index}`} className="flex min-h-[22px]">
               <span
                 aria-hidden="true"
-                className="shrink-0 select-none text-right text-vscode-line-number w-[var(--gutter-width)] pr-[14px]"
+                className="shrink-0 select-none text-right text-vscode-line-number w-(--gutter-width) pr-[14px]"
               >
                 {index + 1}
               </span>

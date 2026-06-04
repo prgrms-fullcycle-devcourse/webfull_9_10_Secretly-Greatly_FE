@@ -1,7 +1,7 @@
 "use client";
 
 import { Codicon, FileIcon } from "@/shared/ui";
-import { QUICK_ACTIONS, RECENT_FILES } from "./mockData";
+import { QUICK_ACTIONS, RECENT_FILES } from "@/widgets/mockData";
 
 /* ── Shortcut Badge ────────────────────────────────────── */
 function Shortcut({ keys }: { keys: string[] }) {
@@ -53,11 +53,11 @@ export function QuickOpen({
       id="quickopen-listbox"
       role="listbox"
       aria-label="Quick Open results"
-      className="fixed max-h-[400px] overflow-auto top-[var(--titlebar-height)] left-1/2 -translate-x-1/2
+      className="fixed max-h-[400px] overflow-auto top-(--titlebar-height) left-1/2 -translate-x-1/2
                  w-[min(680px,calc(100vw-32px))] bg-vscode-quick-input
                  border border-vscode-border-widget border-t-0
-                 rounded-b-[var(--radius-sm)] shadow-[var(--shadow-overlay)]
-                 z-[var(--z-command-palette)] list-none p-0 m-0"
+                 rounded-b-sm shadow-(--shadow-overlay)
+                 z-(--z-command-palette) list-none p-0 m-0"
       onMouseDown={(e) => e.stopPropagation()}
     >
       {/* Default actions */}
