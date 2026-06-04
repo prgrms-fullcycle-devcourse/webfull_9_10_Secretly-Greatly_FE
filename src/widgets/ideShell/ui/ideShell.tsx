@@ -3,9 +3,10 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useState } from "react";
 import { NotificationCenter, type NotificationItem } from "@/shared/ui";
+import type { TreeFileOpenPayload } from "./treeView";
 import { ActivityBar } from "./activityBar";
 import { EditorGroup } from "./editorGroup";
-import { MOCK_NOTIFICATIONS } from "./mockData";
+import { MOCK_NOTIFICATIONS, type MockTab } from "./mockData";
 import { PanelArea } from "./panelArea";
 import { Sidebar } from "./sidebar";
 import { StatusBar } from "./statusBar";
@@ -18,6 +19,26 @@ const PANEL_MAX_HEIGHT_OFFSET = 180;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function getPanelMaxHeight() {
+  return Math.max(
+    PANEL_MIN_HEIGHT,
+    window.innerHeight - PANEL_MAX_HEIGHT_OFFSET,
+  );
+}
+
+function createEditorTab(file: TreeFileOpenPayload): MockTab {
+  return {
+    id: file.id,
+    filename: file.name,
+    path: file.path,
+    content: [
+      `// ${[...file.path, file.name].join("/")}`,
+      "",
+      "파일 미리보기 내용이 아직 준비되지 않았습니다.",
+    ],
+  };
 }
 
 interface IdeShellProps {
@@ -35,12 +56,39 @@ export function IdeShell({
     defaultNotificationsOpen,
   );
   const [activeView, setActiveView] = useState<string | null>(null);
-  const [editorView, setEditorView] = useState<"welcome" | "editor">("editor");
+  const [editorTabs, setEditorTabs] = useState<MockTab[]>([]);
+  const [activeEditorTabKey, setActiveEditorTabKey] = useState<string | null>(
+    null,
+  );
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [panelHeight, setPanelHeight] = useState(220);
 
   const handleViewChange = (id: string) => {
     setActiveView((prev) => (prev === id ? null : id));
+  };
+
+  const handleFileOpen = (file: TreeFileOpenPayload) => {
+    setEditorTabs((prev) => {
+      if (prev.some((tab) => tab.id === file.id)) return prev;
+      return [...prev, createEditorTab(file)];
+    });
+    setActiveEditorTabKey(file.id);
+  };
+
+  const handleCloseEditorTab = (id: string) => {
+    const closedIndex = editorTabs.findIndex((tab) => tab.id === id);
+    const nextTabs = editorTabs.filter((tab) => tab.id !== id);
+
+    setEditorTabs(nextTabs);
+
+    if (nextTabs.length === 0) {
+      setActiveEditorTabKey(null);
+      return;
+    }
+
+    if (activeEditorTabKey === id) {
+      setActiveEditorTabKey(nextTabs[Math.max(0, closedIndex - 1)].id);
+    }
   };
 
   const startSidebarResize = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -71,12 +119,8 @@ export function IdeShell({
     document.body.dataset.resizing = "panel";
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
-      const maxHeight = Math.max(
-        PANEL_MIN_HEIGHT,
-        window.innerHeight - PANEL_MAX_HEIGHT_OFFSET,
-      );
       const nextHeight = startHeight - (moveEvent.clientY - startY);
-      setPanelHeight(clamp(nextHeight, PANEL_MIN_HEIGHT, maxHeight));
+      setPanelHeight(clamp(nextHeight, PANEL_MIN_HEIGHT, getPanelMaxHeight()));
     };
 
     const stopResize = () => {
@@ -90,12 +134,8 @@ export function IdeShell({
   };
 
   const resizePanelWithKeyboard = (delta: number) => {
-    const maxHeight = Math.max(
-      PANEL_MIN_HEIGHT,
-      window.innerHeight - PANEL_MAX_HEIGHT_OFFSET,
-    );
     setPanelHeight((value) =>
-      clamp(value + delta, PANEL_MIN_HEIGHT, maxHeight),
+      clamp(value + delta, PANEL_MIN_HEIGHT, getPanelMaxHeight()),
     );
   };
 
@@ -108,7 +148,11 @@ export function IdeShell({
         <ActivityBar activeView={activeView} onViewChange={handleViewChange} />
         {activeView && (
           <>
-            <Sidebar view={activeView} width={sidebarWidth} />
+            <Sidebar
+              view={activeView}
+              width={sidebarWidth}
+              onFileOpen={handleFileOpen}
+            />
             <div
               role="separator"
               aria-orientation="vertical"
@@ -137,8 +181,10 @@ export function IdeShell({
         {/* main-area: editor + panel vertical split */}
         <div className="flex flex-col flex-1 overflow-hidden">
           <EditorGroup
-            view={editorView}
-            onAllTabsClosed={() => setEditorView("welcome")}
+            tabs={editorTabs}
+            activeTabKey={activeEditorTabKey}
+            onActiveTabChange={setActiveEditorTabKey}
+            onCloseTab={handleCloseEditorTab}
           />
           <div
             role="separator"
