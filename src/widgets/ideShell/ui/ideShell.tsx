@@ -2,10 +2,11 @@
 
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useState } from "react";
+import { NotificationCenter, type NotificationItem } from "@/shared/ui";
 import type { TreeFileOpenPayload } from "./treeView";
 import { ActivityBar } from "./activityBar";
 import { EditorGroup } from "./editorGroup";
-import type { MockTab } from "./mockData";
+import { MOCK_NOTIFICATIONS, type MockTab } from "./mockData";
 import { PanelArea } from "./panelArea";
 import { Sidebar } from "./sidebar";
 import { StatusBar } from "./statusBar";
@@ -40,7 +41,20 @@ function createEditorTab(file: TreeFileOpenPayload): MockTab {
   };
 }
 
-export function IdeShell() {
+interface IdeShellProps {
+  /** 표시할 알림 목록 (기본: 샘플). 실제 데이터로 교체. */
+  notifications?: NotificationItem[];
+  /** 알림 센터 초기 열림 상태 (기본 false) */
+  defaultNotificationsOpen?: boolean;
+}
+
+export function IdeShell({
+  notifications = MOCK_NOTIFICATIONS,
+  defaultNotificationsOpen = false,
+}: IdeShellProps = {}) {
+  const [notificationsOpen, setNotificationsOpen] = useState(
+    defaultNotificationsOpen,
+  );
   const [activeView, setActiveView] = useState<string | null>(null);
   const [editorTabs, setEditorTabs] = useState<MockTab[]>([]);
   const [activeEditorTabKey, setActiveEditorTabKey] = useState<string | null>(
@@ -194,7 +208,17 @@ export function IdeShell() {
         </div>
       </div>
 
-      <StatusBar />
+      <StatusBar
+        notificationsActive={notificationsOpen}
+        onBellClick={() => setNotificationsOpen((prev) => !prev)}
+      />
+
+      {/* 전역 알림 센터 — 종/▼ 로 토글 */}
+      <NotificationCenter
+        items={notifications}
+        open={notificationsOpen}
+        onOpenChange={setNotificationsOpen}
+      />
     </div>
   );
 }

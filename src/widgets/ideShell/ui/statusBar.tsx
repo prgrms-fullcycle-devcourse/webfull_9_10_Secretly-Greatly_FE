@@ -2,7 +2,17 @@
 
 import { Codicon } from "@/shared/ui";
 
-export function StatusBar() {
+interface StatusBarProps {
+  /** 종 클릭 핸들러 (알림 센터 토글) */
+  onBellClick?: () => void;
+  /** 알림 센터 열림 여부 — 종 아이콘 표시용 */
+  notificationsActive?: boolean;
+}
+
+export function StatusBar({
+  onBellClick,
+  notificationsActive = false,
+}: StatusBarProps = {}) {
   return (
     <footer
       className="shrink-0 flex items-center justify-between select-none overflow-hidden
@@ -49,6 +59,8 @@ export function StatusBar() {
           className="statusbar-item statusbar-item-icon"
           title="Notifications"
           aria-label="Notifications"
+          aria-pressed={notificationsActive}
+          onClick={onBellClick}
         >
           <Codicon icon="codicon-bell" size={14} />
         </button>
