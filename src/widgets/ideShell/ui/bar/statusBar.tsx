@@ -16,8 +16,8 @@ export function StatusBar({
   return (
     <footer
       className="shrink-0 flex items-center justify-between select-none overflow-hidden
-                 h-[var(--statusbar-height)] bg-vscode-statusbar border-t border-vscode-border-statusbar
-                 text-vscode-fg-statusbar z-[var(--z-statusbar)]"
+                 h-(--statusbar-height) bg-vscode-statusbar border-t border-vscode-border-statusbar
+                 text-vscode-fg-statusbar z-(--z-statusbar)"
     >
       {/* Left */}
       <div className="flex items-center h-full">

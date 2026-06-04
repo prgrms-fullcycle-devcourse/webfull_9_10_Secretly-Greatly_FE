@@ -6,7 +6,7 @@ import { Codicon, IconButton } from "@/shared/ui";
 import type { TreeFileOpenPayload } from "./treeView";
 import { TreeView } from "./treeView";
 import { SearchView } from "./searchView";
-import { EXPLORER_TREE } from "./mockData";
+import { EXPLORER_TREE } from "@/widgets/mockData";
 
 const STUB_VIEWS: Record<string, string> = {
   scm: "Source Control",
@@ -50,7 +50,7 @@ function SectionHeader({
           size={16}
           className="shrink-0 text-vscode-fg-icon"
         />
-        <span className="min-w-0 overflow-hidden truncate whitespace-nowrap uppercase font-bold tracking-[0.04em] text-vscode-fg-sidebar text-[length:var(--font-size-sm)]">
+        <span className="min-w-0 overflow-hidden truncate whitespace-nowrap uppercase font-bold tracking-[0.04em] text-vscode-fg-sidebar text-(length:--font-size-sm)">
           {label}
         </span>
       </button>
@@ -135,7 +135,7 @@ function renderContent(
   if (view === "search") return <SearchView />;
   if (view === "account") return <AuthPanel />;
   return (
-    <div className="flex-1 flex items-center justify-center text-vscode-fg-desc text-[length:var(--font-size-md)]">
+    <div className="flex-1 flex items-center justify-center text-vscode-fg-desc text-(length:--font-size-md)">
       {STUB_VIEWS[view] ?? view}
     </div>
   );
@@ -149,7 +149,7 @@ export function Sidebar({ view, width, onFileOpen }: Props) {
   return (
     <aside
       aria-label={title}
-      className="shrink-0 overflow-hidden flex flex-col bg-vscode-sidebar text-vscode-fg-sidebar w-[var(--sidebar-width)] border-r border-vscode-border-sidebar z-[var(--z-sidebar)]"
+      className="shrink-0 overflow-hidden flex flex-col bg-vscode-sidebar text-vscode-fg-sidebar w-(--sidebar-width) border-r border-vscode-border-sidebar z-(--z-sidebar)"
       style={{ width }}
     >
       {/* View Title — search has its own header */}
