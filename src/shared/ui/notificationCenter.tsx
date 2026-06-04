@@ -6,6 +6,8 @@
  * - 비즈니스 도메인을 모르는 순수 UI 컴포넌트입니다. (shared 레이어 규칙 준수)
  * - 색상/간격/그림자/zIndex 등 모든 값은 `tokens.css`의 디자인 토큰을 사용합니다.
  * - 스타일은 Tailwind 유틸리티 우선, 토큰은 arbitrary value(`[var(--token)]`)로 연결합니다.
+ * - 제어 모델은 두 축이 독립적입니다: 열림 상태는 `open`을 주면 제어, 없으면 내부 관리.
+ *   개별 닫기는 `onDismiss`를 주면 부모가 관리, 없으면 내부 `dismissed` 상태로 처리합니다.
  *
  * @example
  * <NotificationCenter
@@ -27,6 +29,8 @@ export interface NotificationAction {
   label: string;
   /** 강조(파란색) 버튼 여부 */
   primary?: boolean;
+  /** 클릭 시 해당 알림을 자동으로 닫을지 (기본 false) */
+  dismissOnClick?: boolean;
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
@@ -62,6 +66,8 @@ export interface NotificationCenterProps {
   onOpenChange?: (open: boolean) => void;
   /** 우측 하단 종(bell) 아이콘을 가리키는 꼬리 화살표 표시 (기본 true) */
   showPointer?: boolean;
+  /** 표시할 알림이 없을 때 보여줄 문구 (기본 "새 알림 없음") */
+  emptyMessage?: string;
   /** 추가 클래스 */
   className?: string;
 }
@@ -77,6 +83,14 @@ const SEVERITY_COLOR: Record<NotificationSeverity, string> = {
   warning: "var(--vscode-notificationsWarningIcon-foreground)",
   error: "var(--vscode-notificationsErrorIcon-foreground)",
 };
+
+/* ── 액션 버튼 클래스 (공통 base + variant) ──────────────── */
+const ACTION_BTN_BASE =
+  "h-[24px] rounded-[var(--radius-xs)] border-0 px-[var(--space-5)] text-[var(--font-size-md)] cursor-pointer transition-colors duration-[var(--duration-fast)] ease-[var(--easing-default)]";
+const ACTION_BTN_PRIMARY =
+  "bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)] hover:bg-[var(--vscode-button-hoverBackground)]";
+const ACTION_BTN_SECONDARY =
+  "bg-[var(--vscode-button-secondaryBackground)] text-[var(--vscode-button-secondaryForeground)] hover:bg-[var(--vscode-button-secondaryHoverBackground)]";
 
 /* ── 헤더 아이콘 버튼 ──────────────────────────────────── */
 function HeaderButton({
@@ -182,12 +196,13 @@ function NotificationRow({
                 <button
                   key={action.label}
                   type="button"
-                  onClick={action.onClick}
-                  className={
-                    action.primary
-                      ? "h-[24px] rounded-[var(--radius-xs)] border-0 px-[var(--space-5)] text-[var(--font-size-md)] cursor-pointer transition-colors duration-[var(--duration-fast)] ease-[var(--easing-default)] bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)] hover:bg-[var(--vscode-button-hoverBackground)]"
-                      : "h-[24px] rounded-[var(--radius-xs)] border-0 px-[var(--space-5)] text-[var(--font-size-md)] cursor-pointer transition-colors duration-[var(--duration-fast)] ease-[var(--easing-default)] bg-[var(--vscode-button-secondaryBackground)] text-[var(--vscode-button-secondaryForeground)] hover:bg-[var(--vscode-button-secondaryHoverBackground)]"
-                  }
+                  onClick={(event) => {
+                    action.onClick?.(event);
+                    if (action.dismissOnClick) onDismiss?.(item.id);
+                  }}
+                  className={`${ACTION_BTN_BASE} ${
+                    action.primary ? ACTION_BTN_PRIMARY : ACTION_BTN_SECONDARY
+                  }`}
                 >
                   {action.label}
                 </button>
@@ -209,6 +224,7 @@ export function NotificationCenter({
   defaultOpen = true,
   onOpenChange,
   showPointer = true,
+  emptyMessage = "새 알림 없음",
   className = "",
 }: NotificationCenterProps) {
   // 컨트롤드/언컨트롤드 모두 지원: onDismiss가 없으면 내부 상태로 직접 제거.
@@ -224,20 +240,33 @@ export function NotificationCenter({
     else setDismissed((prev) => new Set(prev).add(id));
   };
 
+  // clear-all: 비제어 모드면 보이는 항목 전부 내부 dismiss + 콜백.
+  const handleClearAll = () => {
+    if (!onDismiss) {
+      setDismissed((prev) => {
+        const next = new Set(prev);
+        visible.forEach((it) => next.add(it.id));
+        return next;
+      });
+    }
+    onClearAll?.();
+  };
+
   // 헤더 ▼ 버튼: 팝업 닫기. 제어 모드면 부모(onOpenChange)에 위임, 아니면 내부 상태로 닫음.
   const handleHide = () => {
     if (!isControlled) setInternalOpen(false);
     onOpenChange?.(false);
   };
 
-  if (!open || visible.length === 0) return null;
+  // 표시 여부는 open 하나로만 결정 (비어 있어도 '새 알림 없음'을 보여줘 상태 desync 방지).
+  if (!open) return null;
 
   return (
     <section
       role="region"
       aria-label={title}
       className={`fixed right-[var(--space-3)] bottom-[calc(var(--statusbar-height)_+_var(--space-3))]
-                  z-[var(--z-notification)] w-[450px] max-w-[calc(100vw_-_2*var(--space-5))]${
+                  z-[var(--z-notification)] w-[450px] max-w-[calc(100vw_-_2*var(--space-3))]${
                     className ? ` ${className}` : ""
                   }`}
     >
@@ -258,7 +287,7 @@ export function NotificationCenter({
             <HeaderButton
               label="Clear All Notifications"
               icon="codicon-clear-all"
-              onClick={onClearAll}
+              onClick={handleClearAll}
             />
             <HeaderButton
               label="Toggle Do Not Disturb Mode"
@@ -272,15 +301,21 @@ export function NotificationCenter({
           </div>
         </header>
 
-        {/* 알림 목록 */}
+        {/* 알림 목록 (비어 있으면 '새 알림 없음') */}
         <ul className="m-0 max-h-[60vh] list-none overflow-auto p-0">
-          {visible.map((item) => (
-            <NotificationRow
-              key={item.id}
-              item={item}
-              onDismiss={handleDismiss}
-            />
-          ))}
+          {visible.length === 0 ? (
+            <li className="px-[var(--space-5)] py-[var(--space-5)] text-[var(--font-size-md)] text-[var(--vscode-descriptionForeground)]">
+              {emptyMessage}
+            </li>
+          ) : (
+            visible.map((item) => (
+              <NotificationRow
+                key={item.id}
+                item={item}
+                onDismiss={handleDismiss}
+              />
+            ))
+          )}
         </ul>
       </div>
 

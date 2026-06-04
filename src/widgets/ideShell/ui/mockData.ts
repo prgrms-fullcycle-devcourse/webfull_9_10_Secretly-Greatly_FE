@@ -306,12 +306,12 @@ export const MOCK_NOTIFICATIONS: NotificationItem[] = [
     severity: "error",
     message: "BTC-KRW 변동성 임계치 도달 (-3.42% · 15분).",
     source: "Terminal Alert",
-    actions: [{ label: "Open", primary: true }],
+    actions: [{ label: "Open", primary: true, dismissOnClick: true }],
   },
   {
     id: "2",
     message: "삼성전자 어제 대비 (+3.58% · 5분).",
     source: "Market Stock",
-    actions: [{ label: "Open", primary: true }],
+    actions: [{ label: "Open", primary: true, dismissOnClick: true }],
   },
 ];
