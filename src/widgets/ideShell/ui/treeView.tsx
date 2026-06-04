@@ -10,21 +10,46 @@ export interface TreeNode {
   children?: TreeNode[];
 }
 
+export interface TreeFileOpenPayload {
+  id: string;
+  name: string;
+  path: string[];
+}
+
 interface TreeItemProps {
   node: TreeNode;
   depth: number;
+  path: string[];
   selectedKey: string | null;
   onSelect: (id: string) => void;
+  onFileOpen?: (file: TreeFileOpenPayload) => void;
 }
 
-function TreeItem({ node, depth, selectedKey, onSelect }: TreeItemProps) {
+function TreeItem({
+  node,
+  depth,
+  path,
+  selectedKey,
+  onSelect,
+  onFileOpen,
+}: TreeItemProps) {
   const [expanded, setExpanded] = useState(depth < 2);
   const isSelected = selectedKey === node.id;
   const isFolder = node.type === "folder";
+  const itemPath = [...path, node.name];
 
   const handleClick = () => {
     onSelect(node.id);
-    if (isFolder) setExpanded((prev) => !prev);
+    if (isFolder) {
+      setExpanded((prev) => !prev);
+      return;
+    }
+
+    onFileOpen?.({
+      id: node.id,
+      name: node.name,
+      path,
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -109,8 +134,10 @@ function TreeItem({ node, depth, selectedKey, onSelect }: TreeItemProps) {
             key={child.id}
             node={child}
             depth={depth + 1}
+            path={itemPath}
             selectedKey={selectedKey}
             onSelect={onSelect}
+            onFileOpen={onFileOpen}
           />
         ))}
     </div>
@@ -120,9 +147,14 @@ function TreeItem({ node, depth, selectedKey, onSelect }: TreeItemProps) {
 interface TreeViewProps {
   nodes: TreeNode[];
   label?: string;
+  onFileOpen?: (file: TreeFileOpenPayload) => void;
 }
 
-export function TreeView({ nodes, label = "Explorer" }: TreeViewProps) {
+export function TreeView({
+  nodes,
+  label = "Explorer",
+  onFileOpen,
+}: TreeViewProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   return (
@@ -132,8 +164,10 @@ export function TreeView({ nodes, label = "Explorer" }: TreeViewProps) {
           key={node.id}
           node={node}
           depth={0}
+          path={[]}
           selectedKey={selectedKey}
           onSelect={setSelectedKey}
+          onFileOpen={onFileOpen}
         />
       ))}
     </div>

@@ -1,39 +1,22 @@
 "use client";
 
-import type { MouseEvent } from "react";
-import { useState } from "react";
 import { Codicon, FileIcon } from "@/shared/ui";
-import { MOCK_TABS } from "./mockData";
+import type { MockTab } from "./mockData";
 
 interface TabbedEditorProps {
-  onAllTabsClosed?: () => void;
+  tabs: MockTab[];
+  activeTabKey: string;
+  onActiveTabChange: (id: string) => void;
+  onCloseTab: (id: string) => void;
 }
 
-export function TabbedEditor({ onAllTabsClosed }: TabbedEditorProps) {
-  const [tabs, setTabs] = useState(MOCK_TABS);
-  const [activeTabKey, setActiveTabKey] = useState<string>("1");
-
+export function TabbedEditor({
+  tabs,
+  activeTabKey,
+  onActiveTabChange,
+  onCloseTab,
+}: TabbedEditorProps) {
   const activeTab = tabs.find((t) => t.id === activeTabKey) ?? tabs[0];
-
-  function handleCloseTab(event: MouseEvent, id: string) {
-    event.stopPropagation();
-    const next = tabs.filter((t) => t.id !== id);
-    setTabs(next);
-
-    if (next.length === 0) {
-      onAllTabsClosed?.();
-      return;
-    }
-
-    if (activeTabKey === id) {
-      const closedIndex = tabs.findIndex((t) => t.id === id);
-      setActiveTabKey(next[Math.max(0, closedIndex - 1)].id);
-    }
-  }
-
-  if (tabs.length === 0) {
-    return null;
-  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-vscode-editor text-vscode-fg">
@@ -62,7 +45,7 @@ export function TabbedEditor({ onAllTabsClosed }: TabbedEditorProps) {
                 ];
           const nextTabKey = next?.dataset.tabId;
 
-          if (nextTabKey) setActiveTabKey(nextTabKey);
+          if (nextTabKey) onActiveTabChange(nextTabKey);
           next?.focus();
         }}
       >
@@ -76,11 +59,11 @@ export function TabbedEditor({ onAllTabsClosed }: TabbedEditorProps) {
             aria-controls={`editor-panel-${tab.id}`}
             className="editor-tab"
             data-active={activeTabKey === tab.id}
-            onClick={() => setActiveTabKey(tab.id)}
+            onClick={() => onActiveTabChange(tab.id)}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                setActiveTabKey(tab.id);
+                onActiveTabChange(tab.id);
               }
             }}
           >
@@ -91,7 +74,10 @@ export function TabbedEditor({ onAllTabsClosed }: TabbedEditorProps) {
               tabIndex={-1}
               className="tab-close"
               aria-label={`Close ${tab.filename}`}
-              onClick={(event) => handleCloseTab(event, tab.id)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onCloseTab(tab.id);
+              }}
             >
               <Codicon icon="codicon-close" size={14} />
             </button>

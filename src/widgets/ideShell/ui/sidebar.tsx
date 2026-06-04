@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AuthPanel } from "@/features/auth/ui";
 import { Codicon, IconButton } from "@/shared/ui";
+import type { TreeFileOpenPayload } from "./treeView";
 import { TreeView } from "./treeView";
 import { SearchView } from "./searchView";
 import { EXPLORER_TREE } from "./mockData";
@@ -71,7 +72,11 @@ function SectionHeader({
   );
 }
 
-function ExplorerView() {
+function ExplorerView({
+  onFileOpen,
+}: {
+  onFileOpen?: (file: TreeFileOpenPayload) => void;
+}) {
   const [folderOpen, setFolderOpen] = useState(true);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
@@ -93,7 +98,11 @@ function ExplorerView() {
         ]}
       />
       {folderOpen && (
-        <TreeView nodes={EXPLORER_TREE} label="Explorer file tree" />
+        <TreeView
+          nodes={EXPLORER_TREE}
+          label="Explorer file tree"
+          onFileOpen={onFileOpen}
+        />
       )}
 
       <SectionHeader
@@ -115,10 +124,14 @@ function ExplorerView() {
 interface Props {
   view: string | null;
   width: number;
+  onFileOpen?: (file: TreeFileOpenPayload) => void;
 }
 
-function renderContent(view: string) {
-  if (view === "explorer") return <ExplorerView />;
+function renderContent(
+  view: string,
+  onFileOpen?: (file: TreeFileOpenPayload) => void,
+) {
+  if (view === "explorer") return <ExplorerView onFileOpen={onFileOpen} />;
   if (view === "search") return <SearchView />;
   if (view === "account") return <AuthPanel />;
   return (
@@ -128,7 +141,7 @@ function renderContent(view: string) {
   );
 }
 
-export function Sidebar({ view, width }: Props) {
+export function Sidebar({ view, width, onFileOpen }: Props) {
   if (!view) return null;
 
   const title = view === "explorer" ? "Explorer" : (STUB_VIEWS[view] ?? view);
@@ -152,7 +165,7 @@ export function Sidebar({ view, width }: Props) {
         </div>
       )}
 
-      {renderContent(view)}
+      {renderContent(view, onFileOpen)}
     </aside>
   );
 }
