@@ -1,24 +1,34 @@
 import { TabbedEditor } from "./tabbedEditor";
 import { WelcomePage } from "./welcomePage";
+import type { MockTab } from "./mockData";
 
 interface EditorGroupProps {
-  view?: "welcome" | "editor";
-  onAllTabsClosed?: () => void;
+  tabs: MockTab[];
+  activeTabKey: string | null;
+  onActiveTabChange: (id: string) => void;
+  onCloseTab: (id: string) => void;
 }
 
 export function EditorGroup({
-  view = "welcome",
-  onAllTabsClosed,
+  tabs,
+  activeTabKey,
+  onActiveTabChange,
+  onCloseTab,
 }: EditorGroupProps) {
   return (
     <section
       className="flex flex-1 overflow-hidden bg-vscode-editor text-vscode-fg"
       aria-label="Editor"
     >
-      {view === "welcome" ? (
+      {tabs.length === 0 || activeTabKey === null ? (
         <WelcomePage />
       ) : (
-        <TabbedEditor onAllTabsClosed={onAllTabsClosed} />
+        <TabbedEditor
+          tabs={tabs}
+          activeTabKey={activeTabKey}
+          onActiveTabChange={onActiveTabChange}
+          onCloseTab={onCloseTab}
+        />
       )}
     </section>
   );
