@@ -6,7 +6,7 @@ import { Codicon, IconButton } from "@/shared/ui";
 import type { TreeFileOpenPayload } from "./treeView";
 import { TreeView } from "./treeView";
 import { SearchView } from "./searchView";
-import { EXPLORER_TREE } from "@/widgets/mockData";
+import { EXPLORER_TREE } from "../model/mockData";
 
 const STUB_VIEWS: Record<string, string> = {
   scm: "Source Control",

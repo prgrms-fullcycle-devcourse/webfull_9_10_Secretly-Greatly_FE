@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { TabbedEditor } from "./tabbedEditor";
 import { WelcomePage } from "./welcomePage";
-import type { MockTab } from "@/widgets/mockData";
+import type { MockTab } from "../model/types";
 
 interface EditorGroupProps {
   tabs: MockTab[];

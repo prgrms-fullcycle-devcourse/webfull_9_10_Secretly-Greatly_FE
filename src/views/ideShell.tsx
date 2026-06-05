@@ -3,16 +3,33 @@
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useState } from "react";
 import { NotificationCenter, type NotificationItem } from "@/shared/ui";
-import { EditorGroup } from "@/widgets/editorPanel";
 import {
-  MOCK_NOTIFICATIONS,
+  EditorGroup,
   NEWS_FEED_TAB,
   type MockTab,
-} from "@/widgets/mockData";
+} from "@/widgets/editorPanel";
+
+const MOCK_NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: "1",
+    severity: "error",
+    message: "BTC-KRW 변동성 임계치 도달 (-3.42% · 15분).",
+    source: "Terminal Alert",
+    actions: [{ label: "Open", primary: true, dismissOnClick: true }],
+  },
+  {
+    id: "2",
+    message: "삼성전자 어제 대비 (+3.58% · 5분).",
+    source: "Market Stock",
+    actions: [{ label: "Open", primary: true, dismissOnClick: true }],
+  },
+];
 import { NewsFeedPanel } from "@/widgets/newsFeed";
-import { Sidebar, type TreeFileOpenPayload } from "@/widgets/sidebar";
+import { Sidebar, type TreeFileOpenPayload } from "@/widgets/sidePannel";
 import { PanelArea } from "@/widgets/terminalPanel";
-import { ActivityBar, StatusBar, TitleBar } from "./bar";
+import { ActivityBar } from "@/widgets/activityBar";
+import { StatusBar } from "@/widgets/statusBar";
+import { TitleBar } from "@/widgets/titleBar";
 
 const SIDEBAR_MIN_WIDTH = 180;
 const SIDEBAR_MAX_WIDTH = 560;

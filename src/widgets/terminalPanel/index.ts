@@ -1,1 +1,1 @@
-export * from "./ui/panelArea";
+export { PanelArea } from "./ui/terminalPanel";

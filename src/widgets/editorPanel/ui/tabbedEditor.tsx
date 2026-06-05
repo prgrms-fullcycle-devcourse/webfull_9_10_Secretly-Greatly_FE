@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Codicon, FileIcon } from "@/shared/ui";
-import type { MockTab } from "@/widgets/mockData";
+import type { MockTab } from "../model/types";
 
 interface TabbedEditorProps {
   tabs: MockTab[];
