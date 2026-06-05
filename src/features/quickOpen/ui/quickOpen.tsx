@@ -1,7 +1,7 @@
 "use client";
 
 import { Codicon, FileIcon } from "@/shared/ui";
-import { QUICK_ACTIONS, RECENT_FILES } from "@/widgets/mockData";
+import { QUICK_ACTIONS, RECENT_FILES } from "../model/mockData";
 
 /* ── Shortcut Badge ────────────────────────────────────── */
 function Shortcut({ keys }: { keys: string[] }) {

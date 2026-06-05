@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Codicon, IconButton, VscodeIcon } from "@/shared/ui";
-import { QuickOpen } from "@/widgets/editorPanel";
-import { QUICK_ACTIONS, RECENT_FILES } from "@/widgets/mockData";
+import { QuickOpen, QUICK_ACTIONS, RECENT_FILES } from "@/features/quickOpen";
 
 type MenuItem =
   | { type: "item"; label: string; shortcut?: string; disabled?: boolean }

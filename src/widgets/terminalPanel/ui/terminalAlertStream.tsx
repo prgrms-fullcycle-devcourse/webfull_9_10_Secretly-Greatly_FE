@@ -32,13 +32,13 @@ export interface TerminalLog {
 
 const LEVEL_CLASS: Record<TerminalLogLevel, string> = {
   INFO: "text-terminal-cyan",
-  WARN: "text-[var(--vscode-notificationsWarningIcon-foreground)]",
-  ALERT: "text-[var(--vscode-notificationsErrorIcon-foreground)]",
-  CRITICAL: "text-[var(--vscode-notificationsErrorIcon-foreground)]",
+  WARN: "text-(--vscode-notificationsWarningIcon-foreground)",
+  ALERT: "text-(--vscode-notificationsErrorIcon-foreground)",
+  CRITICAL: "text-(--vscode-notificationsErrorIcon-foreground)",
 };
 
-const UP_CLASS = "text-[var(--vscode-editorGutter-addedBackground)]";
-const DOWN_CLASS = "text-[var(--vscode-editorGutter-deletedBackground)]";
+const UP_CLASS = "text-(--vscode-editorGutter-addedBackground)";
+const DOWN_CLASS = "text-(--vscode-editorGutter-deletedBackground)";
 
 /* ── 데모용 목 데이터 ──────────────────────────────────── */
 const SEED_LOGS: TerminalLog[] = [
@@ -224,8 +224,8 @@ export function TerminalAlertStream({
       </div>
 
       {/* 푸터: 즐겨찾기 알림 스트림 요약 (패널 좌우 패딩 상쇄해 full-bleed) */}
-      <footer className="-mx-5 shrink-0 border-t border-vscode-border-panel px-5 py-1 text-[length:var(--font-size-md)] text-vscode-fg-desc">
-        <span className="text-[var(--vscode-notificationsWarningIcon-foreground)]">
+      <footer className="-mx-5 shrink-0 border-t border-vscode-border-panel px-5 py-1 text-(length:--font-size-md) text-vscode-fg-desc">
+        <span className="text-(--vscode-notificationsWarningIcon-foreground)">
           ★
         </span>{" "}
         favorites alert stream
