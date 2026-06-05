@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Codicon, FileIcon } from "@/shared/ui";
 import type { MockTab } from "@/widgets/mockData";
 
@@ -8,6 +9,7 @@ interface TabbedEditorProps {
   activeTabKey: string;
   onActiveTabChange: (id: string) => void;
   onCloseTab: (id: string) => void;
+  panelRegistry?: Record<string, () => ReactNode>;
 }
 
 export function TabbedEditor({
@@ -15,6 +17,7 @@ export function TabbedEditor({
   activeTabKey,
   onActiveTabChange,
   onCloseTab,
+  panelRegistry,
 }: TabbedEditorProps) {
   const activeTab = tabs.find((t) => t.id === activeTabKey) ?? tabs[0];
 
@@ -107,19 +110,26 @@ export function TabbedEditor({
         aria-label={activeTab.filename}
         className="flex-1 overflow-auto bg-vscode-editor font-mono"
       >
-        <div className="min-w-full py-2 text-[13px] leading-[22px]">
-          {activeTab.content.map((line, index) => (
-            <div key={`${activeTab.id}-${index}`} className="flex min-h-[22px]">
-              <span
-                aria-hidden="true"
-                className="shrink-0 select-none text-right text-vscode-line-number w-(--gutter-width) pr-[14px]"
+        {activeTab.view && panelRegistry?.[activeTab.view] ? (
+          panelRegistry[activeTab.view]()
+        ) : (
+          <div className="min-w-full py-2 text-[13px] leading-[22px]">
+            {activeTab.content.map((line, index) => (
+              <div
+                key={`${activeTab.id}-${index}`}
+                className="flex min-h-[22px]"
               >
-                {index + 1}
-              </span>
-              <code className="whitespace-pre text-vscode-fg">{line}</code>
-            </div>
-          ))}
-        </div>
+                <span
+                  aria-hidden="true"
+                  className="shrink-0 select-none text-right text-vscode-line-number w-(--gutter-width) pr-[14px]"
+                >
+                  {index + 1}
+                </span>
+                <code className="whitespace-pre text-vscode-fg">{line}</code>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

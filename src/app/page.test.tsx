@@ -22,14 +22,31 @@ describe("Home Page", () => {
     const user = userEvent.setup();
     render(<Home />);
 
-    await user.click(
-      screen.getByRole("button", { name: "Explorer (Ctrl+Shift+E)" }),
-    );
     await user.click(screen.getByRole("treeitem", { name: "page.tsx" }));
 
     expect(screen.getByRole("tab", { name: "page.tsx" })).toBeInTheDocument();
     expect(
       screen.getByRole("tabpanel", { name: "page.tsx" }),
     ).toBeInTheDocument();
+  });
+
+  it("뉴스 피드에서 카테고리 필터가 동작해야 한다", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+
+    await user.click(screen.getByRole("treeitem", { name: "news.feed" }));
+    await user.click(screen.getByRole("button", { name: "정책" }));
+
+    expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(1);
+    expect(
+      screen.getByRole("heading", {
+        name: "애플, 신규 서비스 구독 정책 변경 검토 보도",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "삼성전자, HBM3E 12단 양산 라인 가동 보도",
+      }),
+    ).not.toBeInTheDocument();
   });
 });
