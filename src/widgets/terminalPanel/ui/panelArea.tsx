@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Codicon, Divider, IconButton, Input } from "@/shared/ui";
+import { TerminalAlertStream } from "./terminalAlertStream";
 
 type PanelTab = "PROBLEMS" | "OUTPUT" | "DEBUG CONSOLE" | "TERMINAL" | "PORTS";
 
@@ -250,17 +251,7 @@ export function PanelArea({ height }: PanelAreaProps) {
             </div>
           </div>
         )}
-        {activeTab === "TERMINAL" && (
-          <div>
-            <span className="text-terminal-cyan">user@screet</span>
-            <span className="text-vscode-fg">:</span>
-            <span className="text-terminal-blue">
-              ~/screet/Secretly_Greatly
-            </span>
-            <span className="text-vscode-fg"> $ </span>
-            <span className="text-vscode-fg-editor">pnpm dev</span>
-          </div>
-        )}
+        {activeTab === "TERMINAL" && <TerminalAlertStream />}
         {activeTab === "PORTS" && (
           <div className="text-vscode-fg-desc text-[13px]">
             No forwarded ports. Forward a port to access your locally running
