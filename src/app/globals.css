@@ -63,29 +63,21 @@
 
 /* ── Base ────────────────────────────────────────────── */
 @layer base {
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
   }
-}
 
-html,
-body {
-  height: 100%;
-  overflow: hidden;
-}
-
-body {
-  background: var(--vscode-window-background);
-  color: var(--vscode-foreground);
-  font-family: var(--font-ui);
-  font-size: var(--font-size-lg);
-  line-height: var(--line-height-normal);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  body {
+    background: var(--vscode-window-background);
+    color: var(--vscode-foreground);
+    font-family: var(--font-ui);
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 /* ── Scrollbar ───────────────────────────────────────── */
@@ -118,6 +110,20 @@ body {
 :focus-visible {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
+}
+
+/* ── Interactive Cursor ─────────────────────────────── */
+button:not(:disabled),
+a[href],
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 /* ── Selection ───────────────────────────────────────── */
@@ -203,7 +209,7 @@ body[data-resizing="panel"] * {
   padding: 0 6px;
   background: transparent;
   color: #4db0dc;
-  cursor: default;
+  cursor: pointer;
   font: inherit;
   font-size: 15px;
   line-height: 23px;
@@ -244,7 +250,7 @@ body[data-resizing="panel"] * {
   padding: 0 4px;
   background: transparent;
   color: inherit;
-  cursor: default;
+  cursor: pointer;
   font: inherit;
   text-align: left;
 }
@@ -294,7 +300,7 @@ body[data-resizing="panel"] * {
   padding: 6px 14px 6px 10px;
   background: #2d2d2d;
   color: #c9c9c9;
-  cursor: default;
+  cursor: pointer;
   font: inherit;
   text-align: left;
 }
@@ -527,7 +533,7 @@ body[data-resizing] .resize-handle:hover {
   padding: 0;
   background: transparent;
   color: var(--vscode-icon-foreground);
-  cursor: default;
+  cursor: pointer;
 }
 .search-field {
   display: flex;
@@ -611,7 +617,6 @@ body[data-resizing] .resize-handle:hover {
 .icon-btn--search {
   width: 22px;
   height: 22px;
-  cursor: default;
   color: var(--vscode-icon-foreground);
 }
 .icon-btn--search:hover {
@@ -964,7 +969,7 @@ body[data-resizing] .resize-handle:hover {
   font-size: var(--font-size-sm);
   font-weight: 400;
   color: var(--vscode-panelTitle-inactiveForeground);
-  cursor: default;
+  cursor: pointer;
   font-family: var(--font-ui);
   user-select: none;
   white-space: nowrap;

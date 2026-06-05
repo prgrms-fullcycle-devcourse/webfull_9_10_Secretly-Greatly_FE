@@ -9,7 +9,16 @@ export interface MockTab {
   filename: string;
   path: string[];
   content: string[];
+  view?: "newsFeed";
 }
+
+export const NEWS_FEED_TAB: MockTab = {
+  id: "news-feed",
+  filename: "news.feed",
+  path: ["src", "news"],
+  content: [],
+  view: "newsFeed",
+};
 
 /* ─────────────────────────────────────────────────────────
    Explorer Tree
@@ -59,21 +68,16 @@ export const EXPLORER_TREE: TreeNode[] = [
       },
       { id: "views", name: "views", type: "folder", children: [] },
       {
-        id: "widgets",
-        name: "widgets",
+        id: "news",
+        name: "news",
         type: "folder",
         children: [
-          "editor-panel",
-          "ide-shell",
-          "sidebar",
-          "status-bar",
-          "terminal-panel",
-        ].map((name) => ({
-          id: `widget-${name}`,
-          name,
-          type: "folder" as const,
-          children: [],
-        })),
+          {
+            id: NEWS_FEED_TAB.id,
+            name: NEWS_FEED_TAB.filename,
+            type: "file",
+          },
+        ],
       },
       {
         id: "features",
@@ -87,7 +91,6 @@ export const EXPLORER_TREE: TreeNode[] = [
           "chat",
           "command-palette",
           "positions",
-          "news",
           "settings",
           "panic-mode",
         ].map((name) => ({

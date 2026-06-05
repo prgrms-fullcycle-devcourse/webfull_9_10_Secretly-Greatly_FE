@@ -1,13 +1,17 @@
 "use client";
 
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useState } from "react";
 import { NotificationCenter, type NotificationItem } from "@/shared/ui";
-import type { TreeFileOpenPayload } from "@/widgets/sidebar";
 import { EditorGroup } from "@/widgets/editorPanel";
-import { MOCK_NOTIFICATIONS, type MockTab } from "@/widgets/mockData";
+import {
+  MOCK_NOTIFICATIONS,
+  NEWS_FEED_TAB,
+  type MockTab,
+} from "@/widgets/mockData";
+import { NewsFeedPanel } from "@/widgets/newsFeed";
+import { Sidebar, type TreeFileOpenPayload } from "@/widgets/sidebar";
 import { PanelArea } from "@/widgets/terminalPanel";
-import { Sidebar } from "@/widgets/sidebar";
 import { ActivityBar, StatusBar, TitleBar } from "./bar";
 
 const SIDEBAR_MIN_WIDTH = 180;
@@ -26,7 +30,15 @@ function getPanelMaxHeight() {
   );
 }
 
+const PANEL_REGISTRY: Record<string, () => ReactNode> = {
+  newsFeed: () => <NewsFeedPanel />,
+};
+
 function createEditorTab(file: TreeFileOpenPayload): MockTab {
+  if (file.id === NEWS_FEED_TAB.id) {
+    return { ...NEWS_FEED_TAB };
+  }
+
   return {
     id: file.id,
     filename: file.name,
@@ -53,7 +65,7 @@ export function IdeShell({
   const [notificationsOpen, setNotificationsOpen] = useState(
     defaultNotificationsOpen,
   );
-  const [activeView, setActiveView] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<string | null>("explorer");
   const [editorTabs, setEditorTabs] = useState<MockTab[]>([]);
   const [activeEditorTabKey, setActiveEditorTabKey] = useState<string | null>(
     null,
@@ -183,6 +195,7 @@ export function IdeShell({
             activeTabKey={activeEditorTabKey}
             onActiveTabChange={setActiveEditorTabKey}
             onCloseTab={handleCloseEditorTab}
+            panelRegistry={PANEL_REGISTRY}
           />
           <div
             role="separator"

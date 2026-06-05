@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AuthPanel } from "@/features/auth/ui";
+import { AuthPanel } from "@/features/auth";
 import { Codicon, IconButton } from "@/shared/ui";
 import type { TreeFileOpenPayload } from "./treeView";
 import { TreeView } from "./treeView";

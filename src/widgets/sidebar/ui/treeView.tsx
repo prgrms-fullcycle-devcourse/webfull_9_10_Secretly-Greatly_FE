@@ -105,7 +105,7 @@ function TreeItem({
         data-selected={isSelected}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
-        style={{ paddingLeft: 8 + depth * 16 }}
+        style={{ paddingLeft: 16 + depth * 16 }}
       >
         {/* twistie */}
         <span className="tree-twistie">
