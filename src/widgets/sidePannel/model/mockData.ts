@@ -57,6 +57,18 @@ export const EXPLORER_TREE: TreeNode[] = [
         ],
       },
       {
+        id: "my-stock",
+        name: "my stock",
+        type: "folder",
+        children: [
+          {
+            id: "positions",
+            name: "positions.json",
+            type: "file",
+          },
+        ],
+      },
+      {
         id: "features",
         name: "features",
         type: "folder",

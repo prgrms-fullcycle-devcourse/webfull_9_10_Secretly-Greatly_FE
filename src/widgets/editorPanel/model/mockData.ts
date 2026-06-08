@@ -7,3 +7,11 @@ export const NEWS_FEED_TAB: MockTab = {
   content: [],
   view: "newsFeed",
 };
+
+export const POSITIONS_TAB: MockTab = {
+  id: "positions",
+  filename: "positions.json",
+  path: ["src", "my stock"],
+  content: [],
+  view: "positions",
+};

@@ -6,8 +6,10 @@ import { NotificationCenter, type NotificationItem } from "@/shared/ui";
 import {
   EditorGroup,
   NEWS_FEED_TAB,
+  POSITIONS_TAB,
   type MockTab,
 } from "@/widgets/editorPanel";
+import { PositionsPanel } from "@/features/positions";
 
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
   {
@@ -49,11 +51,16 @@ function getPanelMaxHeight() {
 
 const PANEL_REGISTRY: Record<string, () => ReactNode> = {
   newsFeed: () => <NewsFeedPanel />,
+  positions: () => <PositionsPanel />,
 };
 
 function createEditorTab(file: TreeFileOpenPayload): MockTab {
   if (file.id === NEWS_FEED_TAB.id) {
     return { ...NEWS_FEED_TAB };
+  }
+
+  if (file.id === POSITIONS_TAB.id) {
+    return { ...POSITIONS_TAB };
   }
 
   return {
