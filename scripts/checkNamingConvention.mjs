@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const SOURCE_DIRECTORY = fileURLToPath(new URL("../src", import.meta.url));
 const CAMEL_CASE_PATTERN = /^[a-z][a-zA-Z0-9]*$/;
-const ALLOWED_SUFFIXES = new Set(["module", "spec", "stories", "test"]);
+const ALLOWED_SUFFIXES = new Set(["module", "spec", "stories", "test", "handler"]);
 const NEXT_FILE_NAMES = new Set([
   "default.tsx",
   "error.tsx",
@@ -58,6 +58,9 @@ function checkFileName(name, path) {
 }
 
 async function checkDirectory(directory) {
+  if (directory.includes(join("shared", "api", "generated"))) {
+    return;
+  }
   const entries = await readdir(directory, { withFileTypes: true });
 
   for (const entry of entries) {
