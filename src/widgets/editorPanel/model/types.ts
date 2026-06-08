@@ -3,5 +3,5 @@ export interface MockTab {
   filename: string;
   path: string[];
   content: string[];
-  view?: "newsFeed";
+  view?: "newsFeed" | "positions";
 }
