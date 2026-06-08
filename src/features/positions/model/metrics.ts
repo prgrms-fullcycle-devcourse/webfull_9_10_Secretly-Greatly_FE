@@ -1,4 +1,5 @@
-import type { Position, PositionMetrics, PortfolioSummary } from "./types";
+import type { Currency, Position } from "@/entities/position";
+import type { PositionMetrics, PortfolioSummary } from "./types";
 
 /** 합계 산출 시 미국(USD) 종목에 적용하는 환율. (추후 시세 연동으로 대체) */
 export const FX_USD_KRW = 1368;
@@ -12,7 +13,7 @@ export function getPositionMetrics(position: Position): PositionMetrics {
   return { marketValue, costValue, profit, profitRate };
 }
 
-function toKrw(value: number, currency: Position["currency"]): number {
+function toKrw(value: number, currency: Currency): number {
   return currency === "USD" ? value * FX_USD_KRW : value;
 }
 

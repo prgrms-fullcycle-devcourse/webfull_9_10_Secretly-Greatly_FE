@@ -1,21 +1,3 @@
-export type Currency = "KRW" | "USD";
-
-/** 보유 종목(포지션). */
-export interface Position {
-  id: string;
-  /** 종목명 (예: "삼성전자") */
-  name: string;
-  /** 티커 (예: "005930.KS") */
-  ticker: string;
-  currency: Currency;
-  /** 평단가 */
-  avgPrice: number;
-  /** 보유 수량 */
-  quantity: number;
-  /** 현재가 */
-  currentPrice: number;
-}
-
 /** 종목 단위 지표(해당 통화 기준). */
 export interface PositionMetrics {
   /** 평가액 = 현재가 × 수량 */

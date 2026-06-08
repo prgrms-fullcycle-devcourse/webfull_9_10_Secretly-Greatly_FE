@@ -10,7 +10,7 @@
  * 데이터는 현재 목 데이터(`MOCK_POSITIONS`)이며, BE/시세 연동 시 교체한다.
  */
 
-import { MOCK_POSITIONS } from "../model/mockData";
+import { usePositionsStore } from "@/entities/position";
 import { getPortfolioSummary } from "../model/metrics";
 import {
   formatAmount,
@@ -19,8 +19,6 @@ import {
   profitColorClass,
 } from "../model/format";
 import { PositionRow, POSITION_GRID } from "./positionRow";
-
-const positions = MOCK_POSITIONS;
 
 function SummaryItem({
   label,
@@ -46,6 +44,7 @@ function SummaryItem({
 }
 
 export function PositionsPanel() {
+  const positions = usePositionsStore((state) => state.positions);
   const summary = getPortfolioSummary(positions);
 
   return (
@@ -88,9 +87,15 @@ export function PositionsPanel() {
 
       {/* 종목 행 */}
       <div>
-        {positions.map((position) => (
-          <PositionRow key={position.id} position={position} />
-        ))}
+        {positions.length === 0 ? (
+          <p className="px-6 py-8 text-center text-(length:--font-size-md) text-vscode-fg-desc">
+            보유 종목이 없습니다. SEARCH 탭에서 + 로 종목을 추가하세요.
+          </p>
+        ) : (
+          positions.map((position) => (
+            <PositionRow key={position.id} position={position} />
+          ))
+        )}
       </div>
 
       {/* 면책 */}

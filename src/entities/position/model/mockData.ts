@@ -1,9 +1,9 @@
 import type { Position } from "./types";
 
-/** 데모용 보유 종목 목록. (추후 BE/시세 연동으로 교체) */
+/** 데모용 초기 보유 종목 (id = 티커). 추후 BE/시세 연동으로 교체. */
 export const MOCK_POSITIONS: Position[] = [
   {
-    id: "samsung",
+    id: "005930.KS",
     name: "삼성전자",
     ticker: "005930.KS",
     currency: "KRW",
@@ -12,7 +12,7 @@ export const MOCK_POSITIONS: Position[] = [
     currentPrice: 74500,
   },
   {
-    id: "nvidia",
+    id: "NVDA.US",
     name: "NVIDIA Corp.",
     ticker: "NVDA.US",
     currency: "USD",
@@ -21,7 +21,7 @@ export const MOCK_POSITIONS: Position[] = [
     currentPrice: 949.5,
   },
   {
-    id: "bitcoin",
+    id: "BTC.KRW",
     name: "비트코인",
     ticker: "BTC.KRW",
     currency: "KRW",
@@ -30,7 +30,7 @@ export const MOCK_POSITIONS: Position[] = [
     currentPrice: 93250000,
   },
   {
-    id: "kakao",
+    id: "035720.KS",
     name: "카카오",
     ticker: "035720.KS",
     currency: "KRW",

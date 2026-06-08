@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Codicon, FileIcon, IconButton } from "@/shared/ui";
+import { usePositionsStore, type Position } from "@/entities/position";
 
 interface SearchOptions {
   caseSensitive: boolean;
@@ -14,6 +15,19 @@ interface StockResult {
   name: string;
   code: string;
   market: "KOSPI" | "NASDAQ" | "CRYPTO";
+}
+
+/** 검색 결과 → 보유 종목. 평단가/수량/현재가는 추가 후 입력·시세로 채운다. */
+function toPosition(stock: StockResult): Position {
+  return {
+    id: stock.code,
+    name: stock.name,
+    ticker: stock.code,
+    currency: stock.market === "NASDAQ" ? "USD" : "KRW",
+    avgPrice: 0,
+    quantity: 0,
+    currentPrice: 0,
+  };
 }
 
 const STOCKS: StockResult[] = [
@@ -209,8 +223,12 @@ export function SearchView() {
     useRegex: false,
   });
   const [starred, setStarred] = useState<Set<string>>(new Set(["1"]));
-  const [addedStocks, setAddedStocks] = useState<Set<string>>(new Set());
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
+
+  // 보유 종목 공유 스토어 — + 버튼이 물타기 패널 목록에 추가/제거.
+  const positions = usePositionsStore((state) => state.positions);
+  const addPosition = usePositionsStore((state) => state.addPosition);
+  const removePosition = usePositionsStore((state) => state.removePosition);
 
   const toggle = (key: keyof SearchOptions) => {
     setOptions((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -228,16 +246,12 @@ export function SearchView() {
     });
   };
 
-  const toggleAdded = (id: string) => {
-    setAddedStocks((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+  const toggleAdded = (stock: StockResult) => {
+    if (positions.some((p) => p.id === stock.code)) {
+      removePosition(stock.code);
+    } else {
+      addPosition(toPosition(stock));
+    }
   };
 
   const toggleBookmark = (id: string) => {
@@ -439,10 +453,10 @@ export function SearchView() {
                   key={stock.id}
                   stock={stock}
                   query={query}
-                  added={addedStocks.has(stock.id)}
+                  added={positions.some((p) => p.id === stock.code)}
                   bookmarked={bookmarked.has(stock.id)}
                   starred={starred.has(stock.id)}
-                  onToggleAdded={() => toggleAdded(stock.id)}
+                  onToggleAdded={() => toggleAdded(stock)}
                   onToggleBookmark={() => toggleBookmark(stock.id)}
                   onToggleStar={() => toggleStar(stock.id)}
                 />

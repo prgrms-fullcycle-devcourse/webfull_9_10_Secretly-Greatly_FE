@@ -1,4 +1,4 @@
-import type { Currency } from "./types";
+import type { Currency } from "@/entities/position";
 
 /** 통화 기호/소수 자릿수에 맞춰 금액 문자열로 변환 (예: 2,235,000 / $11,394.00). */
 export function formatAmount(value: number, currency: Currency): string {

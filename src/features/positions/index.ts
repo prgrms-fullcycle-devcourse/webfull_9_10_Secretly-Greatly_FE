@@ -1,7 +1,5 @@
 export { PositionsPanel } from "./ui";
 export type {
-  Position,
-  Currency,
   PositionMetrics,
   PortfolioSummary,
   DcaSimulateRequest,

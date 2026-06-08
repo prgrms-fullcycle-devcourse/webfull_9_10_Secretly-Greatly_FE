@@ -9,6 +9,7 @@
 
 import { useState } from "react";
 import { Codicon } from "@/shared/ui";
+import { usePositionsStore, type Position } from "@/entities/position";
 import { getPositionMetrics } from "../model/metrics";
 import {
   formatAmount,
@@ -16,7 +17,6 @@ import {
   formatProfit,
   profitColorClass,
 } from "../model/format";
-import type { Position } from "../model/types";
 import { DcaSimulator } from "./dcaSimulator";
 
 /** 헤더/행이 공유하는 컬럼 그리드 (정렬 일치용). */
@@ -28,11 +28,10 @@ const cellInput =
 
 export function PositionRow({ position }: { position: Position }) {
   const [expanded, setExpanded] = useState(false);
-  const [avgPrice, setAvgPrice] = useState(position.avgPrice);
-  const [quantity, setQuantity] = useState(position.quantity);
+  const updatePosition = usePositionsStore((state) => state.updatePosition);
+  const removePosition = usePositionsStore((state) => state.removePosition);
 
-  const view: Position = { ...position, avgPrice, quantity };
-  const { marketValue, profit, profitRate } = getPositionMetrics(view);
+  const { marketValue, profit, profitRate } = getPositionMetrics(position);
 
   return (
     <div className="border-b border-vscode-border-panel/60">
@@ -71,14 +70,14 @@ export function PositionRow({ position }: { position: Position }) {
           type="number"
           inputMode="numeric"
           aria-label="평단가"
-          value={Number.isFinite(avgPrice) ? avgPrice : ""}
+          value={Number.isFinite(position.avgPrice) ? position.avgPrice : ""}
           onClick={(e) => e.stopPropagation()}
           onChange={(e) =>
-            setAvgPrice(
-              Number.isFinite(e.target.valueAsNumber)
+            updatePosition(position.id, {
+              avgPrice: Number.isFinite(e.target.valueAsNumber)
                 ? e.target.valueAsNumber
                 : 0,
-            )
+            })
           }
           className={cellInput}
         />
@@ -88,14 +87,14 @@ export function PositionRow({ position }: { position: Position }) {
           type="number"
           inputMode="numeric"
           aria-label="수량"
-          value={Number.isFinite(quantity) ? quantity : ""}
+          value={Number.isFinite(position.quantity) ? position.quantity : ""}
           onClick={(e) => e.stopPropagation()}
           onChange={(e) =>
-            setQuantity(
-              Number.isFinite(e.target.valueAsNumber)
+            updatePosition(position.id, {
+              quantity: Number.isFinite(e.target.valueAsNumber)
                 ? e.target.valueAsNumber
                 : 0,
-            )
+            })
           }
           className={cellInput}
         />
@@ -122,11 +121,14 @@ export function PositionRow({ position }: { position: Position }) {
           {formatPct(profitRate)}
         </span>
 
-        {/* 삭제(연출용) */}
+        {/* 삭제 */}
         <button
           type="button"
           aria-label={`${position.name} 삭제`}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            removePosition(position.id);
+          }}
           className="flex h-6 w-6 items-center justify-center justify-self-end rounded-(--radius-xs) text-vscode-fg-icon hover:bg-(--vscode-list-hoverBackground)"
         >
           <Codicon icon="codicon-trash" size={14} />
@@ -137,8 +139,8 @@ export function PositionRow({ position }: { position: Position }) {
       {expanded && (
         <DcaSimulator
           code={position.ticker.split(".")[0]}
-          currentAvgPrice={avgPrice}
-          currentQuantity={quantity}
+          currentAvgPrice={position.avgPrice}
+          currentQuantity={position.quantity}
           currentPrice={position.currentPrice}
         />
       )}
