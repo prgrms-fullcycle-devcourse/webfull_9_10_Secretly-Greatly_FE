@@ -46,10 +46,24 @@ export const RECENT_FILES: RecentFile[] = [
     tag: "recently opened",
   },
   {
-    filename: "page.tsx",
-    iconColor: "#61afef",
-    name: "page.tsx",
-    path: "Secretly_Greatly\\src\\app\\(auth)\\login",
+    filename: "ALL.sheet",
+    name: "ALL.sheet",
+    path: "Secretly_Greatly\\src\\watchlist",
+  },
+  {
+    filename: "KOSPI.sheet",
+    name: "KOSPI.sheet",
+    path: "Secretly_Greatly\\src\\watchlist",
+  },
+  {
+    filename: "NASDAQ.sheet",
+    name: "NASDAQ.sheet",
+    path: "Secretly_Greatly\\src\\watchlist",
+  },
+  {
+    filename: "CRYPTO.sheet",
+    name: "CRYPTO.sheet",
+    path: "Secretly_Greatly\\src\\watchlist",
   },
   {
     filename: "PRD-vscode-design-system.md",

@@ -7,41 +7,19 @@ export const EXPLORER_TREE: TreeNode[] = [
     type: "folder",
     children: [
       {
-        id: "app",
-        name: "app",
+        id: "watchlist",
+        name: "watchlist",
         type: "folder",
         children: [
-          {
-            id: "app-auth",
-            name: "(auth)",
-            type: "folder",
-            children: [
-              {
-                id: "app-auth-login",
-                name: "login",
-                type: "folder",
-                children: [
-                  { id: "app-auth-login-page", name: "page.tsx", type: "file" },
-                ],
-              },
-              {
-                id: "app-auth-register",
-                name: "register",
-                type: "folder",
-                children: [
-                  {
-                    id: "app-auth-register-page",
-                    name: "page.tsx",
-                    type: "file",
-                  },
-                ],
-              },
-            ],
-          },
-          { id: "app-layout", name: "layout.tsx", type: "file" },
-          { id: "app-page", name: "page.tsx", type: "file" },
-          { id: "app-globals", name: "globals.css", type: "file" },
-        ],
+          "ALL.sheet",
+          "KOSPI.sheet",
+          "NASDAQ.sheet",
+          "CRYPTO.sheet",
+        ].map((filename) => ({
+          id: `watchlist-${filename}`,
+          name: filename,
+          type: "file" as const,
+        })),
       },
       { id: "views", name: "views", type: "folder", children: [] },
       {
@@ -62,7 +40,6 @@ export const EXPLORER_TREE: TreeNode[] = [
         type: "folder",
         children: [
           "auth",
-          "watchlist",
           "market",
           "alerts",
           "chat",
