@@ -3,16 +3,15 @@ import { defineConfig } from "orval";
 export default defineConfig({
   api: {
     input: {
-      // TODO: 백엔드 Swagger/OpenAPI spec URL 또는 로컬 json 파일 경로로 수정해 주세요.
-      // 예: 'http://localhost:8080/api-docs' 또는 './swagger.json'
-      target: "http://localhost:8080/api-docs",
+      target: "http://localhost:3000/api-docs-json",
     },
     output: {
-      mode: "tags-split", // Swagger의 태그별로 파일 분할 생성 (auth.ts, user.ts 등)
+      mode: "tags-split",
       target: "./src/shared/api/generated",
       schemas: "./src/shared/api/generated/model",
-      client: "react-query", // React Query 훅 생성 (useQuery, useMutation 등)
-      mock: true, // MSW 모킹 핸들러도 같이 자동 생성 (테스트 및 모킹에 유용)
+      client: "react-query",
+      httpClient: "axios",
+      mock: true,
       override: {
         mutator: {
           path: "./src/shared/api/customInstance.ts",
