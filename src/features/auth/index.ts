@@ -1,1 +1,1 @@
-export {};
+export { AuthPanel } from "./ui";
