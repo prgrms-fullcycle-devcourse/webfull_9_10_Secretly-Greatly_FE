@@ -32,6 +32,12 @@ import { PanelArea } from "@/widgets/terminalPanel";
 import { ActivityBar } from "@/widgets/activityBar";
 import { StatusBar } from "@/widgets/statusBar";
 import { TitleBar } from "@/widgets/titleBar";
+import { WatchlistSheetPanel } from "@/widgets/watchlistSheet";
+import {
+  StockBigChartPanel,
+  StockDetailPanel,
+  type StockSummary,
+} from "@/widgets/stockDetail";
 
 const SIDEBAR_MIN_WIDTH = 180;
 const SIDEBAR_MAX_WIDTH = 560;
@@ -49,10 +55,9 @@ function getPanelMaxHeight() {
   );
 }
 
-const PANEL_REGISTRY: Record<string, () => ReactNode> = {
-  newsFeed: () => <NewsFeedPanel />,
-  positions: () => <PositionsPanel />,
-};
+function isWatchlistSheet(file: TreeFileOpenPayload) {
+  return file.path.at(-1) === "watchlist" && file.name.endsWith(".sheet");
+}
 
 function createEditorTab(file: TreeFileOpenPayload): MockTab {
   if (file.id === NEWS_FEED_TAB.id) {
@@ -61,6 +66,16 @@ function createEditorTab(file: TreeFileOpenPayload): MockTab {
 
   if (file.id === POSITIONS_TAB.id) {
     return { ...POSITIONS_TAB };
+  }
+
+  if (isWatchlistSheet(file)) {
+    return {
+      id: file.id,
+      filename: file.name,
+      path: file.path,
+      content: [],
+      view: "watchlistSheet",
+    };
   }
 
   return {
@@ -96,6 +111,26 @@ export function IdeShell({
   );
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [panelHeight, setPanelHeight] = useState(220);
+  const [selectedStock, setSelectedStock] = useState<StockSummary | null>(null);
+  const [stockChartTabs, setStockChartTabs] = useState<
+    Record<string, StockSummary>
+  >({});
+
+  const panelRegistry: Record<string, (tab: MockTab) => ReactNode> = {
+    newsFeed: () => <NewsFeedPanel />,
+    positions: () => <PositionsPanel />,
+    watchlistSheet: (tab) => (
+      <WatchlistSheetPanel
+        filename={tab.filename}
+        onSelectStock={setSelectedStock}
+        selectedCode={selectedStock?.code ?? null}
+      />
+    ),
+    stockBigChart: (tab) => {
+      const stock = stockChartTabs[tab.id];
+      return stock ? <StockBigChartPanel stock={stock} /> : null;
+    },
+  };
 
   const handleViewChange = (id: string) => {
     setActiveView((prev) => (prev === id ? null : id));
@@ -114,6 +149,12 @@ export function IdeShell({
     const nextTabs = editorTabs.filter((tab) => tab.id !== id);
 
     setEditorTabs(nextTabs);
+    setStockChartTabs((prev) => {
+      if (!prev[id]) return prev;
+      const rest = { ...prev };
+      delete rest[id];
+      return rest;
+    });
 
     if (nextTabs.length === 0) {
       setActiveEditorTabKey(null);
@@ -123,6 +164,25 @@ export function IdeShell({
     if (activeEditorTabKey === id) {
       setActiveEditorTabKey(nextTabs[Math.max(0, closedIndex - 1)].id);
     }
+  };
+
+  const handleOpenBigChart = (stock: StockSummary) => {
+    const tabKey = `stock-big-chart-${stock.code}`;
+    setStockChartTabs((prev) => ({ ...prev, [tabKey]: stock }));
+    setEditorTabs((prev) => {
+      if (prev.some((tab) => tab.id === tabKey)) return prev;
+      return [
+        ...prev,
+        {
+          id: tabKey,
+          filename: `${stock.code}.bigchart`,
+          path: ["src", "market"],
+          content: [],
+          view: "stockBigChart",
+        },
+      ];
+    });
+    setActiveEditorTabKey(tabKey);
   };
 
   const startSidebarResize = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -214,13 +274,28 @@ export function IdeShell({
 
         {/* main-area: editor + panel vertical split */}
         <div className="flex flex-col flex-1 overflow-hidden">
-          <EditorGroup
-            tabs={editorTabs}
-            activeTabKey={activeEditorTabKey}
-            onActiveTabChange={setActiveEditorTabKey}
-            onCloseTab={handleCloseEditorTab}
-            panelRegistry={PANEL_REGISTRY}
-          />
+          <div className="flex flex-1 overflow-hidden">
+            <EditorGroup
+              tabs={editorTabs}
+              activeTabKey={activeEditorTabKey}
+              onActiveTabChange={setActiveEditorTabKey}
+              onCloseTab={handleCloseEditorTab}
+              panelRegistry={panelRegistry}
+            />
+
+            {selectedStock && (
+              <aside
+                aria-label={`${selectedStock.name} 상세`}
+                className="w-[340px] shrink-0 overflow-hidden"
+              >
+                <StockDetailPanel
+                  stock={selectedStock}
+                  onClose={() => setSelectedStock(null)}
+                  onOpenBigChart={handleOpenBigChart}
+                />
+              </aside>
+            )}
+          </div>
           <div
             role="separator"
             aria-orientation="horizontal"
