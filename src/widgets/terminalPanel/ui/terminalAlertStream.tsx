@@ -37,7 +37,8 @@ const LEVEL_CLASS: Record<TerminalLogLevel, string> = {
   CRITICAL: "text-(--vscode-notificationsErrorIcon-foreground)",
 };
 
-const UP_CLASS = "text-(--vscode-editorGutter-addedBackground)";
+// 상승/하락색은 앱 전체와 통일 (시안 / 빨강)
+const UP_CLASS = "text-terminal-cyan";
 const DOWN_CLASS = "text-(--vscode-editorGutter-deletedBackground)";
 
 /* ── 데모용 목 데이터 ──────────────────────────────────── */
