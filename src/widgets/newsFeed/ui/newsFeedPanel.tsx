@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { SegmentFilter } from "@/shared/ui";
 
 const FILTERS = ["전체", "실적", "공급망", "정책", "시장"] as const;
+const FILTER_OPTIONS = FILTERS.map((filter) => ({
+  value: filter,
+  label: filter,
+}));
 
 type NewsFilter = (typeof FILTERS)[number];
 type NewsCategory = Exclude<NewsFilter, "전체">;
@@ -99,19 +104,12 @@ export function NewsFeedPanel() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-vscode-editor font-sans text-vscode-fg">
-      <div className="flex h-[40px] shrink-0 items-center gap-[4px] border-b border-vscode-border-widget px-3.5">
-        {FILTERS.map((filter) => (
-          <button
-            key={filter}
-            type="button"
-            aria-pressed={selectedFilter === filter}
-            data-active={selectedFilter === filter}
-            onClick={() => setSelectedFilter(filter)}
-            className="h-[24px] w-[45px] rounded-[2px] border border-vscode-border-input p-0 text-center text-[12px] leading-4 text-vscode-fg-desc hover:bg-vscode-list-hover data-[active=true]:border-vscode-focus data-[active=true]:bg-(--vscode-button-background) data-[active=true]:text-(--vscode-button-foreground)"
-          >
-            {filter}
-          </button>
-        ))}
+      <div className="flex h-[40px] shrink-0 items-center border-b border-vscode-border-widget px-3.5">
+        <SegmentFilter
+          options={FILTER_OPTIONS}
+          value={selectedFilter}
+          onValueChange={setSelectedFilter}
+        />
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
