@@ -10,6 +10,7 @@ import {
   type MockTab,
 } from "@/widgets/editorPanel";
 import { PositionsPanel } from "@/features/positions";
+import { PanicMode } from "@/features/panichot";
 
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
   {
@@ -329,6 +330,9 @@ export function IdeShell({
         open={notificationsOpen}
         onOpenChange={setNotificationsOpen}
       />
+
+      {/* 패닉 핫키 — ESC 두 번이면 위장 설정화면 */}
+      <PanicMode />
     </div>
   );
 }
