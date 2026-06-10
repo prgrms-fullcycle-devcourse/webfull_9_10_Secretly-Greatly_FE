@@ -1,6 +1,7 @@
 "use client";
 
 import { Codicon } from "@/shared/ui";
+import { MarketIndicators } from "@/features/marketIndicators";
 
 interface StatusBarProps {
   /** 종 클릭 핸들러 (알림 센터 토글) */
@@ -40,6 +41,9 @@ export function StatusBar({
 
       {/* Right */}
       <div className="flex items-center h-full">
+        {/* 선행지표 (KOSPI·NASDAQ FUT·VIX·USD/KRW) */}
+        <MarketIndicators />
+
         <button className="statusbar-item" title="Go to Line/Column">
           Ln 1, Col 1
         </button>
