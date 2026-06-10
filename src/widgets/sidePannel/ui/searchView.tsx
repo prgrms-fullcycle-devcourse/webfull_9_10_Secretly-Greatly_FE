@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Codicon, FileIcon, IconButton } from "@/shared/ui";
-import { usePositionsStore, type Position } from "@/entities/position";
+import { createPosition, usePositionsStore } from "@/entities/position";
 
 interface SearchOptions {
   caseSensitive: boolean;
@@ -15,19 +15,6 @@ interface StockResult {
   name: string;
   code: string;
   market: "KOSPI" | "NASDAQ" | "CRYPTO";
-}
-
-/** 검색 결과 → 보유 종목. 평단가/수량/현재가는 추가 후 입력·시세로 채운다. */
-function toPosition(stock: StockResult): Position {
-  return {
-    id: stock.code,
-    name: stock.name,
-    ticker: stock.code,
-    currency: stock.market === "NASDAQ" ? "USD" : "KRW",
-    avgPrice: 0,
-    quantity: 0,
-    currentPrice: 0,
-  };
 }
 
 const STOCKS: StockResult[] = [
@@ -156,51 +143,37 @@ function ResultItem({
           className="flex shrink-0 items-start"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            type="button"
-            title={added ? "관심종목 추가됨" : "관심종목 추가"}
-            aria-pressed={added}
+          <IconButton
+            variant="search"
+            label={added ? "관심종목 추가됨" : "관심종목 추가"}
+            pressed={added}
             onClick={onToggleAdded}
-            className="flex h-5.5 w-5.5 items-center justify-center rounded hover:bg-vscode-list-active"
-          >
-            <Codicon
-              icon={added ? "codicon-check" : "codicon-add"}
-              size={12}
-              className={
-                added
-                  ? "text-[var(--vscode-editorGutter-addedBackground)]"
-                  : "text-vscode-fg-icon"
-              }
-            />
-          </button>
-          <button
-            type="button"
-            title={starred ? "즐겨찾기 해제" : "즐겨찾기 추가"}
-            aria-pressed={starred}
+            icon={added ? "codicon-check" : "codicon-add"}
+            iconSize={12}
+            iconClassName={
+              added
+                ? "text-[var(--vscode-editorGutter-addedBackground)]"
+                : undefined
+            }
+          />
+          <IconButton
+            variant="search"
+            label={starred ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+            pressed={starred}
             onClick={onToggleStar}
-            className="flex h-5.5 w-5.5 items-center justify-center rounded hover:bg-vscode-list-active"
-          >
-            <Codicon
-              icon="codicon-star-empty"
-              size={13}
-              className={starred ? "text-yellow-400" : "text-vscode-fg-icon"}
-            />
-          </button>
-          <button
-            type="button"
-            title={bookmarked ? "북마크 해제" : "북마크 추가"}
-            aria-pressed={bookmarked}
+            icon="codicon-star-empty"
+            iconSize={13}
+            iconClassName={starred ? "text-yellow-400" : undefined}
+          />
+          <IconButton
+            variant="search"
+            label={bookmarked ? "북마크 해제" : "북마크 추가"}
+            pressed={bookmarked}
             onClick={onToggleBookmark}
-            className="flex h-5.5 w-5.5 items-center justify-center rounded hover:bg-vscode-list-active"
-          >
-            <Codicon
-              icon="codicon-bookmark"
-              size={14}
-              className={
-                bookmarked ? "text-vscode-focus" : "text-vscode-fg-icon"
-              }
-            />
-          </button>
+            icon="codicon-bookmark"
+            iconSize={14}
+            iconClassName={bookmarked ? "text-vscode-focus" : undefined}
+          />
         </div>
       </div>
 
@@ -250,7 +223,7 @@ export function SearchView() {
     if (positions.some((p) => p.id === stock.code)) {
       removePosition(stock.code);
     } else {
-      addPosition(toPosition(stock));
+      addPosition(createPosition(stock));
     }
   };
 

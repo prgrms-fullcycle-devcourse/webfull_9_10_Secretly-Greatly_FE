@@ -12,6 +12,8 @@ interface IconButtonProps {
   /** Codicon shortcut, e.g. "codicon-add". Use children instead for SVG glyphs. */
   icon?: string;
   iconSize?: number;
+  iconClassName?: string;
+  pressed?: boolean;
   children?: ReactNode;
 }
 
@@ -23,6 +25,8 @@ export function IconButton({
   className = "",
   icon,
   iconSize = 16,
+  iconClassName,
+  pressed,
   children,
 }: IconButtonProps) {
   const variantClass =
@@ -34,10 +38,15 @@ export function IconButton({
       type="button"
       title={label}
       aria-label={label}
+      aria-pressed={pressed}
       onClick={onClick}
       className={`icon-btn ${variantClass} shrink-0${className ? ` ${className}` : ""}`}
     >
-      {icon ? <Codicon icon={icon} size={iconSize} /> : children}
+      {icon ? (
+        <Codicon icon={icon} size={iconSize} className={iconClassName} />
+      ) : (
+        children
+      )}
     </button>
   );
 }
