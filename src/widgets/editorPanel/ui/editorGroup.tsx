@@ -8,7 +8,7 @@ interface EditorGroupProps {
   activeTabKey: string | null;
   onActiveTabChange: (id: string) => void;
   onCloseTab: (id: string) => void;
-  panelRegistry?: Record<string, () => ReactNode>;
+  panelRegistry?: Record<string, (tab: MockTab) => ReactNode>;
 }
 
 export function EditorGroup({

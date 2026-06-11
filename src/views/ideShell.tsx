@@ -10,6 +10,7 @@ import {
   type MockTab,
 } from "@/widgets/editorPanel";
 import { PositionsPanel } from "@/features/positions";
+import { PanicMode } from "@/features/panichot";
 
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
   {
@@ -32,6 +33,13 @@ import { PanelArea } from "@/widgets/terminalPanel";
 import { ActivityBar } from "@/widgets/activityBar";
 import { StatusBar } from "@/widgets/statusBar";
 import { TitleBar } from "@/widgets/titleBar";
+import { WatchlistSheetPanel } from "@/widgets/watchlistSheet";
+import {
+  StockBigChartPanel,
+  StockDetailPanel,
+  type StockSummary,
+} from "@/widgets/stockDetail";
+import { AgentPanel } from "@/widgets/agentPanel";
 
 const SIDEBAR_MIN_WIDTH = 180;
 const SIDEBAR_MAX_WIDTH = 560;
@@ -49,10 +57,9 @@ function getPanelMaxHeight() {
   );
 }
 
-const PANEL_REGISTRY: Record<string, () => ReactNode> = {
-  newsFeed: () => <NewsFeedPanel />,
-  positions: () => <PositionsPanel />,
-};
+function isWatchlistSheet(file: TreeFileOpenPayload) {
+  return file.path.at(-1) === "watchlist" && file.name.endsWith(".sheet");
+}
 
 function createEditorTab(file: TreeFileOpenPayload): MockTab {
   if (file.id === NEWS_FEED_TAB.id) {
@@ -61,6 +68,16 @@ function createEditorTab(file: TreeFileOpenPayload): MockTab {
 
   if (file.id === POSITIONS_TAB.id) {
     return { ...POSITIONS_TAB };
+  }
+
+  if (isWatchlistSheet(file)) {
+    return {
+      id: file.id,
+      filename: file.name,
+      path: file.path,
+      content: [],
+      view: "watchlistSheet",
+    };
   }
 
   return {
@@ -96,6 +113,30 @@ export function IdeShell({
   );
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [panelHeight, setPanelHeight] = useState(220);
+  const [isPanelVisible, setIsPanelVisible] = useState(true);
+  const [isSecondarySidebarVisible, setIsSecondarySidebarVisible] =
+    useState(false);
+  const [secondarySidebarWidth, setSecondarySidebarWidth] = useState(300);
+  const [selectedStock, setSelectedStock] = useState<StockSummary | null>(null);
+  const [stockChartTabs, setStockChartTabs] = useState<
+    Record<string, StockSummary>
+  >({});
+
+  const panelRegistry: Record<string, (tab: MockTab) => ReactNode> = {
+    newsFeed: () => <NewsFeedPanel />,
+    positions: () => <PositionsPanel />,
+    watchlistSheet: (tab) => (
+      <WatchlistSheetPanel
+        filename={tab.filename}
+        onSelectStock={setSelectedStock}
+        selectedCode={selectedStock?.code ?? null}
+      />
+    ),
+    stockBigChart: (tab) => {
+      const stock = stockChartTabs[tab.id];
+      return stock ? <StockBigChartPanel stock={stock} /> : null;
+    },
+  };
 
   const handleViewChange = (id: string) => {
     setActiveView((prev) => (prev === id ? null : id));
@@ -114,6 +155,12 @@ export function IdeShell({
     const nextTabs = editorTabs.filter((tab) => tab.id !== id);
 
     setEditorTabs(nextTabs);
+    setStockChartTabs((prev) => {
+      if (!prev[id]) return prev;
+      const rest = { ...prev };
+      delete rest[id];
+      return rest;
+    });
 
     if (nextTabs.length === 0) {
       setActiveEditorTabKey(null);
@@ -125,6 +172,25 @@ export function IdeShell({
     }
   };
 
+  const handleOpenBigChart = (stock: StockSummary) => {
+    const tabKey = `stock-big-chart-${stock.code}`;
+    setStockChartTabs((prev) => ({ ...prev, [tabKey]: stock }));
+    setEditorTabs((prev) => {
+      if (prev.some((tab) => tab.id === tabKey)) return prev;
+      return [
+        ...prev,
+        {
+          id: tabKey,
+          filename: `${stock.code}.bigchart`,
+          path: ["src", "market"],
+          content: [],
+          view: "stockBigChart",
+        },
+      ];
+    });
+    setActiveEditorTabKey(tabKey);
+  };
+
   const startSidebarResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     const startX = event.clientX;
@@ -134,6 +200,31 @@ export function IdeShell({
     const handlePointerMove = (moveEvent: PointerEvent) => {
       const nextWidth = startWidth + moveEvent.clientX - startX;
       setSidebarWidth(clamp(nextWidth, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH));
+    };
+
+    const stopResize = () => {
+      document.body.removeAttribute("data-resizing");
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", stopResize);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", stopResize);
+  };
+
+  const startSecondarySidebarResize = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = secondarySidebarWidth;
+    document.body.dataset.resizing = "sidebar";
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const nextWidth = startWidth - (moveEvent.clientX - startX);
+      setSecondarySidebarWidth(
+        clamp(nextWidth, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+      );
     };
 
     const stopResize = () => {
@@ -175,7 +266,15 @@ export function IdeShell({
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-vscode-window">
-      <TitleBar />
+      <TitleBar
+        onToggleSidebar={() =>
+          setActiveView((prev) => (prev ? null : "explorer"))
+        }
+        onTogglePanel={() => setIsPanelVisible((prev) => !prev)}
+        onToggleSecondarySidebar={() =>
+          setIsSecondarySidebarVisible((prev) => !prev)
+        }
+      />
 
       {/* workbench */}
       <div className="flex flex-1 overflow-hidden">
@@ -214,33 +313,91 @@ export function IdeShell({
 
         {/* main-area: editor + panel vertical split */}
         <div className="flex flex-col flex-1 overflow-hidden">
-          <EditorGroup
-            tabs={editorTabs}
-            activeTabKey={activeEditorTabKey}
-            onActiveTabChange={setActiveEditorTabKey}
-            onCloseTab={handleCloseEditorTab}
-            panelRegistry={PANEL_REGISTRY}
-          />
-          <div
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Resize panel"
-            className="resize-handle resize-handle-horizontal"
-            tabIndex={0}
-            onPointerDown={startPanelResize}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowUp") {
-                event.preventDefault();
-                resizePanelWithKeyboard(10);
-              }
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                resizePanelWithKeyboard(-10);
-              }
-            }}
-          />
-          <PanelArea height={panelHeight} />
+          <div className="flex flex-1 overflow-hidden">
+            <EditorGroup
+              tabs={editorTabs}
+              activeTabKey={activeEditorTabKey}
+              onActiveTabChange={setActiveEditorTabKey}
+              onCloseTab={handleCloseEditorTab}
+              panelRegistry={panelRegistry}
+            />
+
+            {selectedStock && (
+              <aside
+                aria-label={`${selectedStock.name} 상세`}
+                className="w-[340px] shrink-0 overflow-hidden"
+              >
+                <StockDetailPanel
+                  stock={selectedStock}
+                  onClose={() => setSelectedStock(null)}
+                  onOpenBigChart={handleOpenBigChart}
+                />
+              </aside>
+            )}
+          </div>
+          {isPanelVisible && (
+            <>
+              <div
+                role="separator"
+                aria-orientation="horizontal"
+                aria-label="Resize panel"
+                className="resize-handle resize-handle-horizontal"
+                tabIndex={0}
+                onPointerDown={startPanelResize}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    resizePanelWithKeyboard(10);
+                  }
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    resizePanelWithKeyboard(-10);
+                  }
+                }}
+              />
+              <PanelArea height={panelHeight} />
+            </>
+          )}
         </div>
+
+        {isSecondarySidebarVisible && (
+          <>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize secondary side bar"
+              className="resize-handle resize-handle-vertical"
+              tabIndex={0}
+              onPointerDown={startSecondarySidebarResize}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowLeft") {
+                  event.preventDefault();
+                  setSecondarySidebarWidth((value) =>
+                    clamp(value + 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+                  );
+                }
+                if (event.key === "ArrowRight") {
+                  event.preventDefault();
+                  setSecondarySidebarWidth((value) =>
+                    clamp(value - 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+                  );
+                }
+              }}
+            />
+            <aside
+              aria-label="Secondary Sidebar"
+              className="shrink-0 overflow-hidden flex flex-col bg-vscode-sidebar text-vscode-fg-sidebar border-l border-vscode-border-sidebar z-(--z-sidebar)"
+              style={{ width: secondarySidebarWidth }}
+            >
+              <div className="sidebar-view-title border-b border-vscode-border-sidebar shrink-0">
+                <span className="sidebar-view-title-label">Agent Chat</span>
+              </div>
+              <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                <AgentPanel />
+              </div>
+            </aside>
+          </>
+        )}
       </div>
 
       <StatusBar
@@ -254,6 +411,9 @@ export function IdeShell({
         open={notificationsOpen}
         onOpenChange={setNotificationsOpen}
       />
+
+      {/* 패닉 핫키 — ESC 두 번이면 위장 설정화면 */}
+      <PanicMode />
     </div>
   );
 }

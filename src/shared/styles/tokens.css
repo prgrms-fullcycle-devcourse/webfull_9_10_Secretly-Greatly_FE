@@ -131,6 +131,14 @@
   --syntax-class: #7ee787;
   --syntax-operator: #c9d1d9;
 
+  /* ── Chart (가격 차트 — 상승/하락은 앱 전체와 동일하게 통일) ── */
+  --chart-up: #4ec9b0; /* 상승 — = terminal-ansiCyan (터미널 ▲와 동일) */
+  --chart-down: #f85149; /* 하락 — = editorGutter-deletedBackground (터미널 ▼와 동일) */
+  --chart-ma-5: #e8a735; /* 이동평균 5 — amber */
+  --chart-ma-20: #79c0ff; /* 이동평균 20 — blue (syntax-number) */
+  --chart-ma-60: #d2a8ff; /* 이동평균 60 — purple (syntax-function) */
+  --chart-ma-120: #8b949e; /* 이동평균 120 — gray (syntax-comment) */
+
   /* ── Terminal ────────────────────────────────────── */
   --terminal-background: #191a1b;
   --terminal-foreground: #bfbfbf;

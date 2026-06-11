@@ -9,7 +9,7 @@ interface TabbedEditorProps {
   activeTabKey: string;
   onActiveTabChange: (id: string) => void;
   onCloseTab: (id: string) => void;
-  panelRegistry?: Record<string, () => ReactNode>;
+  panelRegistry?: Record<string, (tab: MockTab) => ReactNode>;
 }
 
 export function TabbedEditor({
@@ -111,7 +111,7 @@ export function TabbedEditor({
         className="flex-1 overflow-auto bg-vscode-editor font-mono"
       >
         {activeTab.view && panelRegistry?.[activeTab.view] ? (
-          panelRegistry[activeTab.view]()
+          panelRegistry[activeTab.view](activeTab)
         ) : (
           <div className="min-w-full py-2 text-[13px] leading-[22px]">
             {activeTab.content.map((line, index) => (
