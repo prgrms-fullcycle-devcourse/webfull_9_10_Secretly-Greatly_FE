@@ -139,6 +139,10 @@ export function IdeShell({
   };
 
   const handleViewChange = (id: string) => {
+    if (id === "settings") {
+      window.dispatchEvent(new CustomEvent("open-panic-settings"));
+      return;
+    }
     setActiveView((prev) => (prev === id ? null : id));
   };
 

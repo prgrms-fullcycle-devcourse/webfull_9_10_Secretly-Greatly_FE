@@ -425,8 +425,15 @@ export function PanicMode() {
       }
     };
 
+    const onOpenSettings = () => setPanic(true);
+
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("open-panic-settings", onOpenSettings);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("open-panic-settings", onOpenSettings);
+    };
   }, [setPanic]);
 
   if (!open) return null;
