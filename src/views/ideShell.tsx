@@ -39,6 +39,7 @@ import {
   StockDetailPanel,
   type StockSummary,
 } from "@/widgets/stockDetail";
+import { AgentPanel } from "@/widgets/agentPanel";
 
 const SIDEBAR_MIN_WIDTH = 180;
 const SIDEBAR_MAX_WIDTH = 560;
@@ -112,6 +113,10 @@ export function IdeShell({
   );
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [panelHeight, setPanelHeight] = useState(220);
+  const [isPanelVisible, setIsPanelVisible] = useState(true);
+  const [isSecondarySidebarVisible, setIsSecondarySidebarVisible] =
+    useState(false);
+  const [secondarySidebarWidth, setSecondarySidebarWidth] = useState(300);
   const [selectedStock, setSelectedStock] = useState<StockSummary | null>(null);
   const [stockChartTabs, setStockChartTabs] = useState<
     Record<string, StockSummary>
@@ -207,6 +212,31 @@ export function IdeShell({
     window.addEventListener("pointerup", stopResize);
   };
 
+  const startSecondarySidebarResize = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = secondarySidebarWidth;
+    document.body.dataset.resizing = "sidebar";
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const nextWidth = startWidth - (moveEvent.clientX - startX);
+      setSecondarySidebarWidth(
+        clamp(nextWidth, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+      );
+    };
+
+    const stopResize = () => {
+      document.body.removeAttribute("data-resizing");
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", stopResize);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", stopResize);
+  };
+
   const startPanelResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     const startY = event.clientY;
@@ -236,7 +266,15 @@ export function IdeShell({
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-vscode-window">
-      <TitleBar />
+      <TitleBar
+        onToggleSidebar={() =>
+          setActiveView((prev) => (prev ? null : "explorer"))
+        }
+        onTogglePanel={() => setIsPanelVisible((prev) => !prev)}
+        onToggleSecondarySidebar={() =>
+          setIsSecondarySidebarVisible((prev) => !prev)
+        }
+      />
 
       {/* workbench */}
       <div className="flex flex-1 overflow-hidden">
@@ -297,26 +335,69 @@ export function IdeShell({
               </aside>
             )}
           </div>
-          <div
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Resize panel"
-            className="resize-handle resize-handle-horizontal"
-            tabIndex={0}
-            onPointerDown={startPanelResize}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowUp") {
-                event.preventDefault();
-                resizePanelWithKeyboard(10);
-              }
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                resizePanelWithKeyboard(-10);
-              }
-            }}
-          />
-          <PanelArea height={panelHeight} />
+          {isPanelVisible && (
+            <>
+              <div
+                role="separator"
+                aria-orientation="horizontal"
+                aria-label="Resize panel"
+                className="resize-handle resize-handle-horizontal"
+                tabIndex={0}
+                onPointerDown={startPanelResize}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    resizePanelWithKeyboard(10);
+                  }
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    resizePanelWithKeyboard(-10);
+                  }
+                }}
+              />
+              <PanelArea height={panelHeight} />
+            </>
+          )}
         </div>
+
+        {isSecondarySidebarVisible && (
+          <>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize secondary side bar"
+              className="resize-handle resize-handle-vertical"
+              tabIndex={0}
+              onPointerDown={startSecondarySidebarResize}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowLeft") {
+                  event.preventDefault();
+                  setSecondarySidebarWidth((value) =>
+                    clamp(value + 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+                  );
+                }
+                if (event.key === "ArrowRight") {
+                  event.preventDefault();
+                  setSecondarySidebarWidth((value) =>
+                    clamp(value - 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+                  );
+                }
+              }}
+            />
+            <aside
+              aria-label="Secondary Sidebar"
+              className="shrink-0 overflow-hidden flex flex-col bg-vscode-sidebar text-vscode-fg-sidebar border-l border-vscode-border-sidebar z-(--z-sidebar)"
+              style={{ width: secondarySidebarWidth }}
+            >
+              <div className="sidebar-view-title border-b border-vscode-border-sidebar shrink-0">
+                <span className="sidebar-view-title-label">Agent Chat</span>
+              </div>
+              <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                <AgentPanel />
+              </div>
+            </aside>
+          </>
+        )}
       </div>
 
       <StatusBar
