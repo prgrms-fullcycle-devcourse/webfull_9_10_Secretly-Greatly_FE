@@ -1,5 +1,5 @@
 /** 인증 세션 로컬 저장 — apiClient 인터셉터와 auth 스토어가 공유. */
-export const AUTH_SESSION_KEY = "screet.authSession";
+export const AUTH_SESSION_KEY = "secret.authSession";
 
 export interface StoredSession {
   userId: string;

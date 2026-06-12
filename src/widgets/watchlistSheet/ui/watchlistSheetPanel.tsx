@@ -271,7 +271,7 @@ export function WatchlistSheetPanel({
 
       <div className="flex-1 overflow-auto py-2 font-mono text-[13px]">
         <CodeLine line={1}>
-          <span className="text-vscode-fg-desc">{`// screet watchlist — ${title}`}</span>
+          <span className="text-vscode-fg-desc">{`// secret watchlist — ${title}`}</span>
         </CodeLine>
         <CodeLine line={2}>
           <span className="text-vscode-fg-desc">

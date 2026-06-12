@@ -360,7 +360,7 @@ export function TitleBar() {
                 />
               ) : (
                 <span className="flex-1 text-[12px] opacity-[0.86]">
-                  screet
+                  secret
                 </span>
               )}
               <Codicon
