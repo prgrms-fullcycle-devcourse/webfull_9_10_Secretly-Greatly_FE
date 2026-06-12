@@ -1,7 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Codicon } from "@/shared/ui";
+import { login, signup } from "../api";
+import {
+  hasErrors,
+  PASSWORD_MAX,
+  useAuthStore,
+  validateLogin,
+  validateSignup,
+  type LoginResult,
+  type SignupErrors,
+} from "../model";
+import { AccountPanel } from "./accountPanel";
+import { AuthField } from "./authField";
 
 type AuthMode = "login" | "signup" | "reset";
 
@@ -31,55 +43,175 @@ const MODE_COPY: Record<
   },
 };
 
-function AuthField({
-  label,
-  placeholder,
-  type = "text",
-}: {
-  label: string;
-  placeholder: string;
-  type?: "email" | "password" | "text";
-}) {
-  return (
-    <label className="auth-panel__field">
-      <span>{label}</span>
-      <input type={type} placeholder={placeholder} />
-    </label>
-  );
-}
-
 interface AuthPanelProps {
   initialMode?: AuthMode;
+  /** 로그인 성공 시 호스트에 알림 (패널 닫기 등). */
+  onSuccess?: (result: LoginResult) => void;
 }
 
-export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
+export function AuthPanel({
+  initialMode = "login",
+  onSuccess,
+}: AuthPanelProps) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [email, setEmail] = useState("");
+  const [fixedNickname, setFixedNickname] = useState("");
+  const [password, setPassword] = useState("");
+  const [checkPassword, setCheckPassword] = useState("");
+  const [errors, setErrors] = useState<SignupErrors>({});
+  const [notice, setNotice] = useState<{
+    type: "error" | "success";
+    text: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const setSession = useAuthStore((s) => s.setSession);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // 로그인 상태면 로그인 폼 대신 내 계정(프로필) 화면.
+  if (isAuthenticated) return <AccountPanel />;
+
   const copy = MODE_COPY[mode];
 
+  const switchMode = (next: AuthMode) => {
+    setMode(next);
+    setErrors({});
+    setNotice(null);
+  };
+
+  const errorMessage = (err: unknown, fallback: string) => {
+    const message = (err as { message?: string | string[] }).message;
+    if (Array.isArray(message)) return message[0] ?? fallback;
+    return message ?? fallback;
+  };
+
+  const handleLogin = async () => {
+    const nextErrors = validateLogin({ email, password });
+    setErrors(nextErrors);
+    if (hasErrors(nextErrors)) return;
+
+    setLoading(true);
+    try {
+      const result = await login({ email, password });
+      setSession(result, email);
+      onSuccess?.(result);
+    } catch (err) {
+      setNotice({
+        type: "error",
+        text: errorMessage(err, "로그인에 실패했습니다. 다시 시도해주세요."),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignup = async () => {
+    const nextErrors = validateSignup({
+      email,
+      fixedNickname,
+      password,
+      checkPassword,
+    });
+    setErrors(nextErrors);
+    if (hasErrors(nextErrors)) return;
+
+    setLoading(true);
+    try {
+      await signup({ email, fixedNickname, password, checkPassword });
+      setPassword("");
+      setCheckPassword("");
+      switchMode("login");
+      setNotice({
+        type: "success",
+        text: "회원가입이 완료되었습니다. 로그인해주세요.",
+      });
+    } catch (err) {
+      setNotice({
+        type: "error",
+        text: errorMessage(err, "회원가입에 실패했습니다. 다시 시도해주세요."),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setNotice(null);
+    if (mode === "login") await handleLogin();
+    else if (mode === "signup") await handleSignup();
+    // reset 모드는 BE 엔드포인트 미구현 — 연결 시 확장.
+  };
+
   return (
-    <form className="auth-panel">
+    <form className="auth-panel" onSubmit={handleSubmit} noValidate>
       <div className="auth-panel__heading">
         <h2>{copy.title}</h2>
         <p>{copy.description}</p>
       </div>
 
       <div className="auth-panel__fields">
-        <AuthField label="이메일" placeholder="you@example.com" type="email" />
+        <AuthField
+          label="이메일"
+          placeholder="you@example.com"
+          type="email"
+          value={email}
+          onChange={setEmail}
+          error={errors.email}
+          autoComplete="email"
+        />
+        {mode === "signup" && (
+          <AuthField
+            label="고정닉"
+            placeholder="사용할 닉네임"
+            value={fixedNickname}
+            onChange={setFixedNickname}
+            error={errors.fixedNickname}
+            autoComplete="nickname"
+          />
+        )}
         {mode !== "reset" && (
-          <AuthField label="비밀번호" placeholder="••••••••" type="password" />
+          <AuthField
+            label="비밀번호"
+            placeholder="••••••••"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            error={errors.password}
+            autoComplete={
+              mode === "login" ? "current-password" : "new-password"
+            }
+            maxLength={mode === "signup" ? PASSWORD_MAX : undefined}
+          />
         )}
         {mode === "signup" && (
           <AuthField
             label="비밀번호 확인"
             placeholder="••••••••"
             type="password"
+            value={checkPassword}
+            onChange={setCheckPassword}
+            error={errors.checkPassword}
+            autoComplete="new-password"
+            maxLength={PASSWORD_MAX}
           />
         )}
       </div>
 
+      {notice && (
+        <p
+          className={`mt-2 text-[12px] ${
+            notice.type === "error"
+              ? "text-(--vscode-errorForeground)"
+              : "text-(--chart-up)"
+          }`}
+        >
+          {notice.text}
+        </p>
+      )}
+
       <div className="auth-panel__actions">
-        <button type="submit" className="auth-panel__button">
-          {copy.submit}
+        <button type="submit" className="auth-panel__button" disabled={loading}>
+          {loading ? "처리 중…" : copy.submit}
         </button>
         {mode !== "reset" && (
           <button
@@ -95,27 +227,27 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
       <div className="auth-panel__links">
         {mode === "login" && (
           <>
-            <button type="button" onClick={() => setMode("reset")}>
+            <button type="button" onClick={() => switchMode("reset")}>
               비밀번호를 잊으셨나요?
             </button>
-            <button type="button" onClick={() => setMode("signup")}>
+            <button type="button" onClick={() => switchMode("signup")}>
               회원가입
             </button>
           </>
         )}
         {mode === "signup" && (
           <div className="auth-panel__links-single">
-            <button type="button" onClick={() => setMode("login")}>
+            <button type="button" onClick={() => switchMode("login")}>
               이미 계정이 있으신가요?
             </button>
           </div>
         )}
         {mode === "reset" && (
           <>
-            <button type="button" onClick={() => setMode("login")}>
+            <button type="button" onClick={() => switchMode("login")}>
               로그인으로 돌아가기
             </button>
-            <button type="button" onClick={() => setMode("signup")}>
+            <button type="button" onClick={() => switchMode("signup")}>
               회원가입
             </button>
           </>
