@@ -125,15 +125,18 @@ interface Props {
   view: string | null;
   width: number;
   onFileOpen?: (file: TreeFileOpenPayload) => void;
+  /** 로그인 성공 시 호출 (예: EXPLORER 뷰로 전환). */
+  onAuthSuccess?: () => void;
 }
 
 function renderContent(
   view: string,
   onFileOpen?: (file: TreeFileOpenPayload) => void,
+  onAuthSuccess?: () => void,
 ) {
   if (view === "explorer") return <ExplorerView onFileOpen={onFileOpen} />;
   if (view === "search") return <SearchView />;
-  if (view === "account") return <AuthPanel />;
+  if (view === "account") return <AuthPanel onSuccess={onAuthSuccess} />;
   return (
     <div className="flex-1 flex items-center justify-center text-vscode-fg-desc text-(length:--font-size-md)">
       {STUB_VIEWS[view] ?? view}
@@ -141,7 +144,7 @@ function renderContent(
   );
 }
 
-export function Sidebar({ view, width, onFileOpen }: Props) {
+export function Sidebar({ view, width, onFileOpen, onAuthSuccess }: Props) {
   if (!view) return null;
 
   const title = view === "explorer" ? "Explorer" : (STUB_VIEWS[view] ?? view);
@@ -165,7 +168,7 @@ export function Sidebar({ view, width, onFileOpen }: Props) {
         </div>
       )}
 
-      {renderContent(view, onFileOpen)}
+      {renderContent(view, onFileOpen, onAuthSuccess)}
     </aside>
   );
 }
