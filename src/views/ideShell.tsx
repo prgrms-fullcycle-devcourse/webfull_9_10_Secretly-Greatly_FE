@@ -247,6 +247,7 @@ export function IdeShell({
               view={activeView}
               width={sidebarWidth}
               onFileOpen={handleFileOpen}
+              onAuthSuccess={() => setActiveView("explorer")}
             />
             <div
               role="separator"
