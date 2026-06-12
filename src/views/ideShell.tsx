@@ -1,7 +1,7 @@
 "use client";
 
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NotificationCenter, type NotificationItem } from "@/shared/ui";
 import {
   EditorGroup,
@@ -11,6 +11,7 @@ import {
 } from "@/widgets/editorPanel";
 import { PositionsPanel } from "@/features/positions";
 import { PanicMode } from "@/features/panichot";
+import { registerAuthUnauthorizedHandler } from "@/features/auth";
 
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
   {
@@ -116,6 +117,11 @@ export function IdeShell({
   const [stockChartTabs, setStockChartTabs] = useState<
     Record<string, StockSummary>
   >({});
+
+  // 401 자동 로그아웃 핸들러 1회 등록 (항상 마운트되는 진입점).
+  useEffect(() => {
+    registerAuthUnauthorizedHandler();
+  }, []);
 
   const panelRegistry: Record<string, (tab: MockTab) => ReactNode> = {
     newsFeed: () => <NewsFeedPanel />,

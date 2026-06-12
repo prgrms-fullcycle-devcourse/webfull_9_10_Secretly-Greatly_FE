@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Codicon } from "@/shared/ui";
 import { login, signup } from "../api";
 import {
@@ -66,6 +66,12 @@ export function AuthPanel({
   const [loading, setLoading] = useState(false);
   const setSession = useAuthStore((s) => s.setSession);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hydrate = useAuthStore((s) => s.hydrate);
+
+  // 마운트 후 저장된 세션 복원 — 초기 렌더는 항상 비로그인이라 하이드레이션이 일치한다.
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   // 로그인 상태면 로그인 폼 대신 내 계정(프로필) 화면.
   if (isAuthenticated) return <AccountPanel />;
@@ -85,14 +91,15 @@ export function AuthPanel({
   };
 
   const handleLogin = async () => {
-    const nextErrors = validateLogin({ email, password });
+    const trimmedEmail = email.trim();
+    const nextErrors = validateLogin({ email: trimmedEmail, password });
     setErrors(nextErrors);
     if (hasErrors(nextErrors)) return;
 
     setLoading(true);
     try {
-      const result = await login({ email, password });
-      setSession(result, email);
+      const result = await login({ email: trimmedEmail, password });
+      setSession(result, trimmedEmail);
       onSuccess?.(result);
     } catch (err) {
       setNotice({
@@ -105,9 +112,11 @@ export function AuthPanel({
   };
 
   const handleSignup = async () => {
+    const trimmedEmail = email.trim();
+    const trimmedNickname = fixedNickname.trim();
     const nextErrors = validateSignup({
-      email,
-      fixedNickname,
+      email: trimmedEmail,
+      fixedNickname: trimmedNickname,
       password,
       checkPassword,
     });
@@ -116,7 +125,12 @@ export function AuthPanel({
 
     setLoading(true);
     try {
-      await signup({ email, fixedNickname, password, checkPassword });
+      await signup({
+        email: trimmedEmail,
+        fixedNickname: trimmedNickname,
+        password,
+        checkPassword,
+      });
       setPassword("");
       setCheckPassword("");
       switchMode("login");
