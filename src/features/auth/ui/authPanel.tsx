@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Codicon } from "@/shared/ui";
 import { login, signup } from "../api";
 import {
   hasErrors,
@@ -14,6 +13,7 @@ import {
 } from "../model";
 import { AccountPanel } from "./accountPanel";
 import { AuthField } from "./authField";
+import { AuthNotice, type AuthNoticeState } from "./authNotice";
 
 type AuthMode = "login" | "signup" | "reset";
 
@@ -59,10 +59,7 @@ export function AuthPanel({
   const [password, setPassword] = useState("");
   const [checkPassword, setCheckPassword] = useState("");
   const [errors, setErrors] = useState<SignupErrors>({});
-  const [notice, setNotice] = useState<{
-    type: "error" | "success";
-    text: string;
-  } | null>(null);
+  const [notice, setNotice] = useState<AuthNoticeState | null>(null);
   const [loading, setLoading] = useState(false);
   const setSession = useAuthStore((s) => s.setSession);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -91,15 +88,15 @@ export function AuthPanel({
   };
 
   const handleLogin = async () => {
-    const trimmedEmail = email.trim();
-    const nextErrors = validateLogin({ email: trimmedEmail, password });
+    const normalizedEmail = email.trim().toLowerCase();
+    const nextErrors = validateLogin({ email: normalizedEmail, password });
     setErrors(nextErrors);
     if (hasErrors(nextErrors)) return;
 
     setLoading(true);
     try {
-      const result = await login({ email: trimmedEmail, password });
-      setSession(result, trimmedEmail);
+      const result = await login({ email: normalizedEmail, password });
+      setSession(result, normalizedEmail);
       onSuccess?.(result);
     } catch (err) {
       setNotice({
@@ -112,10 +109,10 @@ export function AuthPanel({
   };
 
   const handleSignup = async () => {
-    const trimmedEmail = email.trim();
+    const normalizedEmail = email.trim().toLowerCase();
     const trimmedNickname = fixedNickname.trim();
     const nextErrors = validateSignup({
-      email: trimmedEmail,
+      email: normalizedEmail,
       fixedNickname: trimmedNickname,
       password,
       checkPassword,
@@ -126,7 +123,7 @@ export function AuthPanel({
     setLoading(true);
     try {
       await signup({
-        email: trimmedEmail,
+        email: normalizedEmail,
         fixedNickname: trimmedNickname,
         password,
         checkPassword,
@@ -150,6 +147,7 @@ export function AuthPanel({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (loading) return; // Enter 연타 등 중복 제출 방어
     setNotice(null);
     if (mode === "login") await handleLogin();
     else if (mode === "signup") await handleSignup();
@@ -166,6 +164,7 @@ export function AuthPanel({
       <div className="auth-panel__fields">
         <AuthField
           label="이메일"
+          name="email"
           placeholder="you@example.com"
           type="email"
           value={email}
@@ -176,6 +175,7 @@ export function AuthPanel({
         {mode === "signup" && (
           <AuthField
             label="고정닉"
+            name="nickname"
             placeholder="사용할 닉네임"
             value={fixedNickname}
             onChange={setFixedNickname}
@@ -186,6 +186,7 @@ export function AuthPanel({
         {mode !== "reset" && (
           <AuthField
             label="비밀번호"
+            name="password"
             placeholder="••••••••"
             type="password"
             value={password}
@@ -200,6 +201,7 @@ export function AuthPanel({
         {mode === "signup" && (
           <AuthField
             label="비밀번호 확인"
+            name="checkPassword"
             placeholder="••••••••"
             type="password"
             value={checkPassword}
@@ -211,31 +213,12 @@ export function AuthPanel({
         )}
       </div>
 
-      {notice && (
-        <p
-          className={`mt-2 text-[12px] ${
-            notice.type === "error"
-              ? "text-(--vscode-errorForeground)"
-              : "text-(--chart-up)"
-          }`}
-        >
-          {notice.text}
-        </p>
-      )}
+      {notice && <AuthNotice type={notice.type} text={notice.text} />}
 
       <div className="auth-panel__actions">
         <button type="submit" className="auth-panel__button" disabled={loading}>
           {loading ? "처리 중…" : copy.submit}
         </button>
-        {mode !== "reset" && (
-          <button
-            type="button"
-            className="auth-panel__button auth-panel__button--github"
-          >
-            <Codicon icon="codicon-github" size={14} />
-            <span>GitHub로 계속</span>
-          </button>
-        )}
       </div>
 
       <div className="auth-panel__links">
