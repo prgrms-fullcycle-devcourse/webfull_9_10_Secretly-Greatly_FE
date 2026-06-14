@@ -117,8 +117,9 @@ export function IdeShell({
   const [isPanelVisible, setIsPanelVisible] = useState(true);
   const [isSecondarySidebarVisible, setIsSecondarySidebarVisible] =
     useState(false);
-  const [secondarySidebarWidth, setSecondarySidebarWidth] = useState(300);
+  const [secondarySidebarWidth, setSecondarySidebarWidth] = useState(360);
   const [selectedStock, setSelectedStock] = useState<StockSummary | null>(null);
+  const [isAgentFullscreen, setIsAgentFullscreen] = useState(false);
   const [stockChartTabs, setStockChartTabs] = useState<
     Record<string, StockSummary>
   >({});
@@ -199,6 +200,17 @@ export function IdeShell({
       ];
     });
     setActiveEditorTabKey(tabKey);
+  };
+
+  const handleToggleAgentFullscreen = () => {
+    setIsAgentFullscreen((prev) => {
+      const next = !prev;
+      if (next) {
+        setActiveView(null);
+        setIsPanelVisible(false);
+      }
+      return next;
+    });
   };
 
   const startSidebarResize = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -323,88 +335,97 @@ export function IdeShell({
         )}
 
         {/* main-area: editor + panel vertical split */}
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex flex-1 overflow-hidden">
-            <EditorGroup
-              tabs={editorTabs}
-              activeTabKey={activeEditorTabKey}
-              onActiveTabChange={setActiveEditorTabKey}
-              onCloseTab={handleCloseEditorTab}
-              panelRegistry={panelRegistry}
-            />
+        {!isAgentFullscreen && (
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden">
+              <EditorGroup
+                tabs={editorTabs}
+                activeTabKey={activeEditorTabKey}
+                onActiveTabChange={setActiveEditorTabKey}
+                onCloseTab={handleCloseEditorTab}
+                panelRegistry={panelRegistry}
+              />
 
-            {selectedStock && (
-              <aside
-                aria-label={`${selectedStock.name} 상세`}
-                className="w-[340px] shrink-0 overflow-hidden"
-              >
-                <StockDetailPanel
-                  stock={selectedStock}
-                  onClose={() => setSelectedStock(null)}
-                  onOpenBigChart={handleOpenBigChart}
+              {selectedStock && (
+                <aside
+                  aria-label={`${selectedStock.name} 상세`}
+                  className="w-[340px] shrink-0 overflow-hidden"
+                >
+                  <StockDetailPanel
+                    stock={selectedStock}
+                    onClose={() => setSelectedStock(null)}
+                    onOpenBigChart={handleOpenBigChart}
+                  />
+                </aside>
+              )}
+            </div>
+            {isPanelVisible && (
+              <>
+                <div
+                  role="separator"
+                  aria-orientation="horizontal"
+                  aria-label="Resize panel"
+                  className="resize-handle resize-handle-horizontal"
+                  tabIndex={0}
+                  onPointerDown={startPanelResize}
+                  onKeyDown={(event) => {
+                    if (event.key === "ArrowUp") {
+                      event.preventDefault();
+                      resizePanelWithKeyboard(10);
+                    }
+                    if (event.key === "ArrowDown") {
+                      event.preventDefault();
+                      resizePanelWithKeyboard(-10);
+                    }
+                  }}
                 />
-              </aside>
+                <PanelArea height={panelHeight} />
+              </>
             )}
           </div>
-          {isPanelVisible && (
-            <>
-              <div
-                role="separator"
-                aria-orientation="horizontal"
-                aria-label="Resize panel"
-                className="resize-handle resize-handle-horizontal"
-                tabIndex={0}
-                onPointerDown={startPanelResize}
-                onKeyDown={(event) => {
-                  if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    resizePanelWithKeyboard(10);
-                  }
-                  if (event.key === "ArrowDown") {
-                    event.preventDefault();
-                    resizePanelWithKeyboard(-10);
-                  }
-                }}
-              />
-              <PanelArea height={panelHeight} />
-            </>
-          )}
-        </div>
+        )}
 
         {isSecondarySidebarVisible && (
           <>
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Resize secondary side bar"
-              className="resize-handle resize-handle-vertical"
-              tabIndex={0}
-              onPointerDown={startSecondarySidebarResize}
-              onKeyDown={(event) => {
-                if (event.key === "ArrowLeft") {
-                  event.preventDefault();
-                  setSecondarySidebarWidth((value) =>
-                    clamp(value + 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
-                  );
-                }
-                if (event.key === "ArrowRight") {
-                  event.preventDefault();
-                  setSecondarySidebarWidth((value) =>
-                    clamp(value - 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
-                  );
-                }
-              }}
-            />
+            {!isAgentFullscreen && (
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize secondary side bar"
+                className="resize-handle resize-handle-vertical"
+                tabIndex={0}
+                onPointerDown={startSecondarySidebarResize}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowLeft") {
+                    event.preventDefault();
+                    setSecondarySidebarWidth((value) =>
+                      clamp(value + 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+                    );
+                  }
+                  if (event.key === "ArrowRight") {
+                    event.preventDefault();
+                    setSecondarySidebarWidth((value) =>
+                      clamp(value - 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+                    );
+                  }
+                }}
+              />
+            )}
             <aside
               aria-label="Secondary Sidebar"
-              className="shrink-0 overflow-hidden flex flex-col bg-vscode-sidebar text-vscode-fg-sidebar border-l border-vscode-border-sidebar z-(--z-sidebar)"
-              style={{ width: secondarySidebarWidth }}
+              className={`shrink-0 flex flex-col bg-vscode-sidebar text-vscode-fg-sidebar z-(--z-sidebar) ${
+                isAgentFullscreen
+                  ? "flex-1 border-none"
+                  : "border-l border-vscode-border-sidebar"
+              }`}
+              style={isAgentFullscreen ? {} : { width: secondarySidebarWidth }}
             >
-              <div className="sidebar-view-title border-b border-vscode-border-sidebar shrink-0">
-                <span className="sidebar-view-title-label">Agent Chat</span>
-              </div>
-              <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-                <AgentPanel />
+              <div className="flex-1 flex flex-col min-h-0 relative">
+                <AgentPanel
+                  onClose={() => setIsSecondarySidebarVisible(false)}
+                  onExpand={handleToggleAgentFullscreen}
+                  isExpanded={isAgentFullscreen}
+                />
               </div>
             </aside>
           </>
