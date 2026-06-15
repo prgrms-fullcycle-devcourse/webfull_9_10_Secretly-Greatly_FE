@@ -11,12 +11,11 @@ import {
 } from "../model";
 import { AuthField } from "./authField";
 import { AuthNotice, type AuthNoticeState } from "./authNotice";
+import { KisConnectPanel } from "./kisConnectPanel";
+import { SECONDARY_BUTTON } from "./secondaryButton";
 
 /** 비밀번호 규칙 안내 (BE 정합: 8~16자 · @$!%*#?&). */
 const PASSWORD_HINT = "영문·숫자·특수문자(@$!%*#?&) · 8~16자";
-
-const SECONDARY_BUTTON =
-  "flex w-full items-center justify-center gap-1.5 rounded-[2px] py-[7px] text-[13px] bg-(--vscode-button-secondaryBackground) text-(--vscode-button-secondaryForeground) hover:bg-(--vscode-button-secondaryHoverBackground)";
 
 /**
  * 비밀번호 변경 폼 — BE `POST /api/auth/passwords` 스펙(현재/새/확인, Bearer)을
@@ -106,6 +105,7 @@ export function AccountPanel() {
   const storeNickname = useAuthStore((s) => s.nickname);
   const clear = useAuthStore((s) => s.clear);
   const [changing, setChanging] = useState(false);
+  const [kisOpen, setKisOpen] = useState(false);
   const [profile, setProfile] = useState<MeResult | null>(null);
 
   // 계정 진입 시 토큰 유효성 검증 겸 서버 프로필 로드.
@@ -145,6 +145,8 @@ export function AccountPanel() {
 
       {changing ? (
         <ChangePasswordForm onCancel={() => setChanging(false)} />
+      ) : kisOpen ? (
+        <KisConnectPanel onClose={() => setKisOpen(false)} />
       ) : (
         <div className="auth-panel__actions">
           <button
@@ -154,6 +156,14 @@ export function AccountPanel() {
           >
             <Codicon icon="codicon-key" size={14} />
             <span>비밀번호 변경</span>
+          </button>
+          <button
+            type="button"
+            className={SECONDARY_BUTTON}
+            onClick={() => setKisOpen(true)}
+          >
+            <Codicon icon="codicon-plug" size={14} />
+            <span>KIS 연동</span>
           </button>
           <button type="button" className={SECONDARY_BUTTON} onClick={clear}>
             <Codicon icon="codicon-sign-out" size={14} />
