@@ -54,11 +54,13 @@ function ChangePasswordForm({
 
     setSubmitting(true);
     try {
-      await changePassword({ currentPassword, newPassword, checkNewPassword });
-      // 성공 → 호스트가 로그인 화면 안내 + 로그아웃(언마운트). 폼은 사라지므로 상태 정리 불필요.
-      onChanged(
-        "비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인해주세요.",
-      );
+      const message = await changePassword({
+        currentPassword,
+        newPassword,
+        checkNewPassword,
+      });
+      // 성공 → 호스트가 로그인 화면 안내(BE 메시지) + 로그아웃(언마운트). 폼은 사라지므로 상태 정리 불필요.
+      onChanged(message);
     } catch (err) {
       const m = (err as { message?: string | string[] }).message;
       setMessage({
