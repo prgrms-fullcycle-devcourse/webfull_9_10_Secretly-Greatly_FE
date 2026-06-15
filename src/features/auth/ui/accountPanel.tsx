@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { Codicon } from "@/shared/ui";
-import { getMe } from "../api";
+import { changePassword, getMe } from "../api";
 import {
   PASSWORD_MAX,
   useAuthStore,
@@ -19,17 +19,25 @@ const SECONDARY_BUTTON =
   "flex w-full items-center justify-center gap-1.5 rounded-[2px] py-[7px] text-[13px] bg-(--vscode-button-secondaryBackground) text-(--vscode-button-secondaryForeground) hover:bg-(--vscode-button-secondaryHoverBackground)";
 
 /**
- * 비밀번호 변경 폼 — BE `POST /api/auth/passwords` 스펙(현재/새/확인, Bearer)을
- * 화면에 반영한다. 실제 API 연동은 추후 작업.
+ * 비밀번호 변경 폼 — BE `PATCH /api/auth/passwords`(현재/새/확인, Bearer) 연동.
  */
-function ChangePasswordForm({ onCancel }: { onCancel: () => void }) {
+function ChangePasswordForm({
+  onCancel,
+  onChanged,
+}: {
+  onCancel: () => void;
+  /** 변경 성공 시 호출 — 로그인 화면 안내 + 로그아웃 처리(호스트). */
+  onChanged: (text: string) => void;
+}) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [checkNewPassword, setCheckNewPassword] = useState("");
   const [message, setMessage] = useState<AuthNoticeState | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submitting) return;
     if (!currentPassword || !newPassword || !checkNewPassword) {
       setMessage({ type: "error", text: "모든 항목을 입력해주세요." });
       return;
@@ -43,11 +51,24 @@ function ChangePasswordForm({ onCancel }: { onCancel: () => void }) {
       setMessage({ type: "error", text: "새 비밀번호가 일치하지 않습니다." });
       return;
     }
-    // TODO: POST /api/auth/passwords (Authorization: Bearer) — BE 연동 예정
-    setMessage({
-      type: "info",
-      text: "입력값 확인됨 · BE 연동은 추후 작업됩니다.",
-    });
+
+    setSubmitting(true);
+    try {
+      await changePassword({ currentPassword, newPassword, checkNewPassword });
+      // 성공 → 호스트가 로그인 화면 안내 + 로그아웃(언마운트). 폼은 사라지므로 상태 정리 불필요.
+      onChanged(
+        "비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인해주세요.",
+      );
+    } catch (err) {
+      const m = (err as { message?: string | string[] }).message;
+      setMessage({
+        type: "error",
+        text: Array.isArray(m)
+          ? (m[0] ?? "비밀번호 변경에 실패했습니다.")
+          : (m ?? "비밀번호 변경에 실패했습니다."),
+      });
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -89,8 +110,12 @@ function ChangePasswordForm({ onCancel }: { onCancel: () => void }) {
       {message && <AuthNotice type={message.type} text={message.text} />}
 
       <div className="auth-panel__actions">
-        <button type="submit" className="auth-panel__button">
-          비밀번호 변경
+        <button
+          type="submit"
+          className="auth-panel__button"
+          disabled={submitting}
+        >
+          {submitting ? "변경 중…" : "비밀번호 변경"}
         </button>
         <button type="button" className={SECONDARY_BUTTON} onClick={onCancel}>
           취소
@@ -101,7 +126,12 @@ function ChangePasswordForm({ onCancel }: { onCancel: () => void }) {
 }
 
 /** 로그인 상태의 ACCOUNT 패널 — 내 정보 + 비밀번호 변경 / 로그아웃. */
-export function AccountPanel() {
+export function AccountPanel({
+  onPasswordChanged,
+}: {
+  /** 비밀번호 변경 성공 시 호출 (로그인 화면 안내 + 로그아웃은 호스트가 처리). */
+  onPasswordChanged: (text: string) => void;
+}) {
   const storeEmail = useAuthStore((s) => s.email);
   const storeNickname = useAuthStore((s) => s.nickname);
   const clear = useAuthStore((s) => s.clear);
@@ -144,7 +174,10 @@ export function AccountPanel() {
       </div>
 
       {changing ? (
-        <ChangePasswordForm onCancel={() => setChanging(false)} />
+        <ChangePasswordForm
+          onCancel={() => setChanging(false)}
+          onChanged={onPasswordChanged}
+        />
       ) : (
         <div className="auth-panel__actions">
           <button

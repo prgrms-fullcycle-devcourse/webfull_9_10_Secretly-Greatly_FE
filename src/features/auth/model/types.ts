@@ -32,3 +32,15 @@ export interface MeResult {
   isAnonymous: boolean;
   createdAt: string;
 }
+
+/** 비밀번호 변경 요청 바디 (BE ChangePasswordRequestDto). */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  checkNewPassword: string;
+}
+
+/** 비밀번호 변경 성공 시 응답 data. */
+export interface ChangePasswordResult {
+  passwordUpdated: boolean;
+}
