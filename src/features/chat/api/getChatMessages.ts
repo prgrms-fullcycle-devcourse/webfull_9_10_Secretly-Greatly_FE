@@ -13,7 +13,7 @@ export async function getChatMessages(
   limit = CHAT_HISTORY_PAGE_SIZE,
 ): Promise<ChatHistoryResponse> {
   const res = await customInstance<APIResponse<ChatHistoryResponse>>({
-    url: `/api/chats/stocks/${encodeURIComponent(ticker)}`,
+    url: `/chats/stocks/${encodeURIComponent(ticker)}`,
     method: "GET",
     params: { page, limit },
   });

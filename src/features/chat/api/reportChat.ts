@@ -9,7 +9,7 @@ import type { ReportChatResult } from "../model/types";
  */
 export async function reportChat(id: number): Promise<ReportChatResult> {
   const res = await customInstance<APIResponse<ReportChatResult>>({
-    url: `/api/chats/${id}/report`,
+    url: `/chats/${id}/report`,
     method: "PATCH",
   });
   return res.data;
