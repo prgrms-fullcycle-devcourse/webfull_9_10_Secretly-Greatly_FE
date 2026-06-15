@@ -3,8 +3,14 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Codicon } from "@/shared/ui";
 import { getMe } from "../api";
-import { PASSWORD_MAX, useAuthStore, validatePassword } from "../model";
+import {
+  PASSWORD_MAX,
+  useAuthStore,
+  validatePassword,
+  type MeResult,
+} from "../model";
 import { AuthField } from "./authField";
+import { AuthNotice, type AuthNoticeState } from "./authNotice";
 
 /** 비밀번호 규칙 안내 (BE 정합: 8~16자 · @$!%*#?&). */
 const PASSWORD_HINT = "영문·숫자·특수문자(@$!%*#?&) · 8~16자";
@@ -20,10 +26,7 @@ function ChangePasswordForm({ onCancel }: { onCancel: () => void }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [checkNewPassword, setCheckNewPassword] = useState("");
-  const [message, setMessage] = useState<{
-    type: "error" | "info";
-    text: string;
-  } | null>(null);
+  const [message, setMessage] = useState<AuthNoticeState | null>(null);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,6 +54,7 @@ function ChangePasswordForm({ onCancel }: { onCancel: () => void }) {
     <form className="auth-panel__fields" onSubmit={handleSubmit} noValidate>
       <AuthField
         label="현재 비밀번호"
+        name="current-password"
         type="password"
         placeholder="••••••••"
         value={currentPassword}
@@ -60,6 +64,7 @@ function ChangePasswordForm({ onCancel }: { onCancel: () => void }) {
       />
       <AuthField
         label="새 비밀번호"
+        name="new-password"
         type="password"
         placeholder="••••••••"
         value={newPassword}
@@ -69,6 +74,7 @@ function ChangePasswordForm({ onCancel }: { onCancel: () => void }) {
       />
       <AuthField
         label="새 비밀번호 확인"
+        name="confirm-new-password"
         type="password"
         placeholder="••••••••"
         value={checkNewPassword}
@@ -80,17 +86,7 @@ function ChangePasswordForm({ onCancel }: { onCancel: () => void }) {
       <p className="pt-1 text-[11px] text-(--vscode-disabledForeground)">
         {PASSWORD_HINT}
       </p>
-      {message && (
-        <p
-          className={`text-[12px] ${
-            message.type === "error"
-              ? "text-(--vscode-errorForeground)"
-              : "text-vscode-fg-desc"
-          }`}
-        >
-          {message.text}
-        </p>
-      )}
+      {message && <AuthNotice type={message.type} text={message.text} />}
 
       <div className="auth-panel__actions">
         <button type="submit" className="auth-panel__button">
@@ -106,14 +102,22 @@ function ChangePasswordForm({ onCancel }: { onCancel: () => void }) {
 
 /** 로그인 상태의 ACCOUNT 패널 — 내 정보 + 비밀번호 변경 / 로그아웃. */
 export function AccountPanel() {
-  const email = useAuthStore((s) => s.email);
+  const storeEmail = useAuthStore((s) => s.email);
+  const storeNickname = useAuthStore((s) => s.nickname);
   const clear = useAuthStore((s) => s.clear);
   const [changing, setChanging] = useState(false);
+  const [profile, setProfile] = useState<MeResult | null>(null);
 
-  // 계정 진입 시 토큰 유효성 검증 — 만료·무효(401)면 apiClient 인터셉터가 자동 로그아웃.
+  // 계정 진입 시 토큰 유효성 검증 겸 서버 프로필 로드.
+  // 무효(401)면 apiClient 인터셉터가 자동 로그아웃하고, 그 외(네트워크 등)는 스토어 값으로 표시.
   useEffect(() => {
-    getMe().catch(() => {});
+    getMe()
+      .then(setProfile)
+      .catch(() => {});
   }, []);
+
+  const nickname = profile?.nickname ?? storeNickname ?? "사용자";
+  const email = profile?.email ?? storeEmail;
 
   return (
     <div className="auth-panel">
@@ -131,10 +135,10 @@ export function AccountPanel() {
         </span>
         <div className="min-w-0">
           <div className="truncate text-[14px] font-semibold text-vscode-fg">
-            {email ?? "사용자"}
+            {nickname}
           </div>
           <div className="truncate text-[11px] text-vscode-fg-desc">
-            로그인 계정
+            {email ?? "로그인 계정"}
           </div>
         </div>
       </div>
