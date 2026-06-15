@@ -1,5 +1,6 @@
 interface AuthFieldProps {
   label: string;
+  name?: string;
   type?: "email" | "password" | "text";
   placeholder?: string;
   value?: string;
@@ -12,6 +13,7 @@ interface AuthFieldProps {
 /** auth 패널 공통 입력 필드 — 라벨 + 인풋 + (선택) 에러 메시지. */
 export function AuthField({
   label,
+  name,
   type = "text",
   placeholder,
   value,
@@ -24,6 +26,7 @@ export function AuthField({
     <label className="auth-panel__field">
       <span>{label}</span>
       <input
+        name={name}
         type={type}
         placeholder={placeholder}
         value={value}
