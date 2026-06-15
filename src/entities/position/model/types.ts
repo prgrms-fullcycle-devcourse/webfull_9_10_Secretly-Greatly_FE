@@ -9,7 +9,7 @@ export interface Position {
   id: string;
   /** 종목명 (예: "삼성전자") */
   name: string;
-  /** 티커 (예: "005930.KS") */
+  /** 티커 (예: "005930") */
   ticker: string;
   currency: Currency;
   /** 평단가 */

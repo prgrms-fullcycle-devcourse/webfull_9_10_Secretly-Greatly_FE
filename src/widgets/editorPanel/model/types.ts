@@ -3,5 +3,5 @@ export interface MockTab {
   filename: string;
   path: string[];
   content: string[];
-  view?: "newsFeed" | "positions" | "watchlistSheet" | "stockBigChart";
+  view?: "newsFeed" | "positions" | "stocksSheet" | "stockBigChart";
 }

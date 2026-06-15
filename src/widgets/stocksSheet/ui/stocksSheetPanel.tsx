@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Codicon, IconButton, SegmentFilter } from "@/shared/ui";
 import { changeColorClass, parseChange, parseVolume } from "@/shared/lib";
 import { createPosition, usePositionsStore } from "@/entities/position";
+import { useFavoritesStore } from "@/features/favorites";
 import type { StockSummary } from "@/widgets/stockDetail";
 
-interface WatchlistSheetPanelProps {
+interface StocksSheetPanelProps {
   filename: string;
   /** 종목 행 클릭 시 상세 패널을 여는 콜백. */
   onSelectStock?: (stock: StockSummary) => void;
@@ -14,25 +15,23 @@ interface WatchlistSheetPanelProps {
   selectedCode?: string | null;
 }
 
-type MarketKey = "ALL" | "KOSPI" | "NASDAQ" | "CRYPTO";
+type MarketKey = "ALL" | "DOMESTIC" | "OVERSEAS" | "COIN";
 type SortKey = "price" | "volume" | "change";
 
-interface WatchlistStock {
+interface StockRow {
   code: string;
   name: string;
   price: string;
   change: string;
   volume: string;
   market: Exclude<MarketKey, "ALL">;
-  /** 초기 즐겨찾기 여부 (★). */
-  favorite?: boolean;
 }
 
 const MARKET_OPTIONS: Array<{ value: MarketKey; label: string }> = [
   { value: "ALL", label: "전체" },
-  { value: "KOSPI", label: "국장" },
-  { value: "NASDAQ", label: "미장" },
-  { value: "CRYPTO", label: "코인" },
+  { value: "DOMESTIC", label: "국장" },
+  { value: "OVERSEAS", label: "미장" },
+  { value: "COIN", label: "코인" },
 ];
 
 const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
@@ -41,83 +40,81 @@ const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
   { key: "change", label: "등락률" },
 ];
 
-const WATCHLIST: WatchlistStock[] = [
+const STOCKS: StockRow[] = [
   {
-    code: "005930.KS",
+    code: "005930",
     name: "삼성전자",
     price: "74500",
     change: "+1.08%",
     volume: "12.43M",
-    market: "KOSPI",
-    favorite: true,
+    market: "DOMESTIC",
   },
   {
-    code: "000660.KS",
+    code: "000660",
     name: "SK하이닉스",
     price: "188300",
     change: "-0.62%",
     volume: "4.21M",
-    market: "KOSPI",
+    market: "DOMESTIC",
   },
   {
-    code: "035720.KS",
+    code: "035720",
     name: "카카오",
     price: "53300",
     change: "+0.38%",
     volume: "2.15M",
-    market: "KOSPI",
+    market: "DOMESTIC",
   },
   {
-    code: "373220.KS",
+    code: "373220",
     name: "LG에너지솔루션",
     price: "483000",
     change: "-1.25%",
     volume: "1.02M",
-    market: "KOSPI",
+    market: "DOMESTIC",
   },
   {
-    code: "AAPL.US",
+    code: "AAPL",
     name: "Apple Inc.",
     price: "189.84",
     change: "+0.78%",
     volume: "52.21M",
-    market: "NASDAQ",
+    market: "OVERSEAS",
   },
   {
-    code: "NVDA.US",
+    code: "NVDA",
     name: "NVIDIA Corp.",
     price: "949.50",
     change: "+1.30%",
     volume: "21.15M",
-    market: "NASDAQ",
-    favorite: true,
+    market: "OVERSEAS",
   },
   {
-    code: "TSLA.US",
+    code: "TSLA",
     name: "Tesla, Inc.",
     price: "175.43",
     change: "-1.21%",
     volume: "84.35M",
-    market: "NASDAQ",
+    market: "OVERSEAS",
   },
   {
-    code: "BTC.KRW",
+    code: "BTC",
     name: "비트코인",
     price: "93250000",
     change: "+0.45%",
     volume: "12.43T",
-    market: "CRYPTO",
+    market: "COIN",
   },
 ];
 
 function getMarketFromFilename(filename: string): MarketKey {
   const prefix = filename.replace(".sheet", "").toUpperCase();
-  return prefix === "KOSPI" || prefix === "NASDAQ" || prefix === "CRYPTO"
+  return prefix === "DOMESTIC" || prefix === "OVERSEAS" || prefix === "COIN"
     ? prefix
     : "ALL";
 }
 
-function getSortValue(stock: WatchlistStock, sortKey: SortKey) {
+function getSortValue(stock: StockRow, sortKey: SortKey) {
   if (sortKey === "price") return Number.parseFloat(stock.price) || 0;
   if (sortKey === "volume") return parseVolume(stock.volume);
   return parseChange(stock.change);
@@ -193,40 +190,36 @@ function Field({
   );
 }
 
-export function WatchlistSheetPanel({
+export function StocksSheetPanel({
   filename,
   onSelectStock,
   selectedCode,
-}: WatchlistSheetPanelProps) {
+}: StocksSheetPanelProps) {
   const [sortKey, setSortKey] = useState<SortKey>("change");
+  // activeMarket 초기값은 파일명 기준. 탭 전환 시 갱신은 ideShell 의 key={tab.id}
+  // (패널 remount)로 처리한다 — effect 내 setState 는 프로젝트 lint 금지(set-state-in-effect).
   const [activeMarket, setActiveMarket] = useState<MarketKey>(() =>
     getMarketFromFilename(filename),
   );
-  const [favorites, setFavorites] = useState<Set<string>>(
-    () => new Set(WATCHLIST.filter((s) => s.favorite).map((s) => s.code)),
-  );
+  const favoriteItems = useFavoritesStore((s) => s.items);
+  const toggleFavorite = useFavoritesStore((s) => s.toggle);
+  const isFavorite = (code: string) =>
+    favoriteItems.some((f) => f.code === code);
   const positions = usePositionsStore((state) => state.positions);
   const addPosition = usePositionsStore((state) => state.addPosition);
   const removePosition = usePositionsStore((state) => state.removePosition);
   const isHeld = (code: string) => positions.some((p) => p.id === code);
-  const toggleHeld = (stock: WatchlistStock) => {
+  const toggleHeld = (stock: StockRow) => {
     if (isHeld(stock.code)) {
       removePosition(stock.code);
     } else {
       addPosition(createPosition(stock));
     }
   };
-  const toggleFavorite = (code: string) =>
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(code)) next.delete(code);
-      else next.add(code);
-      return next;
-    });
   const filteredStocks =
     activeMarket === "ALL"
-      ? WATCHLIST
-      : WATCHLIST.filter((stock) => stock.market === activeMarket);
+      ? STOCKS
+      : STOCKS.filter((stock) => stock.market === activeMarket);
   const stocks = [...filteredStocks].sort(
     (a, b) => getSortValue(b, sortKey) - getSortValue(a, sortKey),
   );
@@ -271,7 +264,7 @@ export function WatchlistSheetPanel({
 
       <div className="flex-1 overflow-auto py-2 font-mono text-[13px]">
         <CodeLine line={1}>
-          <span className="text-vscode-fg-desc">{`// secret watchlist — ${title}`}</span>
+          <span className="text-vscode-fg-desc">{`// secret stocks — ${title}`}</span>
         </CodeLine>
         <CodeLine line={2}>
           <span className="text-vscode-fg-desc">
@@ -283,7 +276,7 @@ export function WatchlistSheetPanel({
           <span> </span>
           <span className="text-[#569cd6]">const</span>
           <span> </span>
-          <span className="text-[#4fc1ff]">watchlist</span>
+          <span className="text-[#4fc1ff]">stocks</span>
           <span> = [</span>
         </CodeLine>
 
@@ -345,18 +338,20 @@ export function WatchlistSheetPanel({
                 />
                 <IconButton
                   variant="search"
-                  label={
-                    favorites.has(stock.code) ? "즐겨찾기 해제" : "즐겨찾기"
-                  }
-                  pressed={favorites.has(stock.code)}
+                  label={isFavorite(stock.code) ? "즐겨찾기 해제" : "즐겨찾기"}
+                  pressed={isFavorite(stock.code)}
                   onClick={(event) => {
                     event.stopPropagation();
-                    toggleFavorite(stock.code);
+                    toggleFavorite({
+                      code: stock.code,
+                      name: stock.name,
+                      market: stock.market,
+                    });
                   }}
                   icon="codicon-star-empty"
                   iconSize={13}
                   iconClassName={
-                    favorites.has(stock.code)
+                    isFavorite(stock.code)
                       ? "text-yellow-400"
                       : "text-vscode-fg-desc opacity-40"
                   }

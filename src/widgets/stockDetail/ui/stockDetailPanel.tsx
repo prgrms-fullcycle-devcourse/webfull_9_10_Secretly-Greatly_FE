@@ -21,21 +21,21 @@ interface StockDetailPanelProps {
 }
 
 const MARKET_LABEL: Record<StockSummary["market"], string> = {
-  KOSPI: "KOREA MARKET",
-  NASDAQ: "US MARKET",
-  CRYPTO: "CRYPTO MARKET",
+  DOMESTIC: "KOREA MARKET",
+  OVERSEAS: "US MARKET",
+  COIN: "CRYPTO MARKET",
 };
 
 /** 시가총액은 가격×유통주식수라 파생 불가 → 종목별 목업값. */
 const MARKET_CAP: Record<string, string> = {
-  "005930.KS": "444.20T",
-  "000660.KS": "137.10T",
-  "035720.KS": "23.40T",
-  "373220.KS": "113.05T",
-  "AAPL.US": "2.95T",
-  "NVDA.US": "2.34T",
-  "TSLA.US": "558.00B",
-  "BTC.KRW": "1.84P",
+  "005930": "444.20T",
+  "000660": "137.10T",
+  "035720": "23.40T",
+  "373220": "113.05T",
+  AAPL: "2.95T",
+  NVDA: "2.34T",
+  TSLA: "558.00B",
+  BTC: "1.84P",
 };
 
 /** 종목 요약 → 상세 지표 (open/high/low/value 등은 현재가·등락률에서 파생). */
