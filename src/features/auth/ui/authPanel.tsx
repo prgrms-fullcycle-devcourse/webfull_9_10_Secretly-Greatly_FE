@@ -174,7 +174,7 @@ export function AuthPanel({
         />
         {mode === "signup" && (
           <AuthField
-            label="고정닉"
+            label="고정 닉네임"
             name="nickname"
             placeholder="사용할 닉네임"
             value={fixedNickname}
@@ -213,7 +213,9 @@ export function AuthPanel({
         )}
       </div>
 
-      {notice && <AuthNotice type={notice.type} text={notice.text} />}
+      {notice && (
+        <AuthNotice type={notice.type} text={notice.text} className="mt-2" />
+      )}
 
       <div className="auth-panel__actions">
         <button type="submit" className="auth-panel__button" disabled={loading}>
