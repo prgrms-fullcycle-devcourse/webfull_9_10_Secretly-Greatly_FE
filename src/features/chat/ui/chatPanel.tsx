@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Codicon } from "@/shared/ui";
-import { GLOBAL_CHAT_LABEL, useChatSocket } from "../model";
+import { GLOBAL_CHAT_LABEL, useChatContext } from "../model";
 import { ChatHeader } from "./chatHeader";
 import { ChatHistoryView } from "./chatHistoryView";
 import { ChatInput } from "./chatInput";
@@ -63,7 +63,7 @@ export function ChatPanel() {
     sendMessage,
     reportMessage,
     clearFeedback,
-  } = useChatSocket();
+  } = useChatContext();
 
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);

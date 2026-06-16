@@ -3,6 +3,7 @@ export type {
   UseChatSocketOptions,
   UseChatSocketResult,
 } from "./useChatSocket";
+export { ChatProvider, useChatContext } from "./chatContext";
 export {
   GLOBAL_CHAT_ROOM,
   GLOBAL_CHAT_LABEL,

@@ -12,6 +12,7 @@ import {
 import { PositionsPanel } from "@/features/positions";
 import { PanicMode } from "@/features/panichot";
 import { registerAuthUnauthorizedHandler } from "@/features/auth";
+import { ChatProvider } from "@/features/chat";
 import { useFavoritesStore } from "@/features/favorites";
 
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
@@ -117,8 +118,9 @@ export function IdeShell({
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [panelHeight, setPanelHeight] = useState(220);
   const [isPanelVisible, setIsPanelVisible] = useState(true);
+  // 사이트 진입 시 에이전트(채팅) 패널을 기본으로 열어둔다.
   const [isSecondarySidebarVisible, setIsSecondarySidebarVisible] =
-    useState(false);
+    useState(true);
   const [secondarySidebarWidth, setSecondarySidebarWidth] = useState(360);
   const [selectedStock, setSelectedStock] = useState<StockSummary | null>(null);
   const [isAgentFullscreen, setIsAgentFullscreen] = useState(false);
@@ -293,168 +295,175 @@ export function IdeShell({
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-vscode-window">
-      <TitleBar
-        onToggleSidebar={() =>
-          setActiveView((prev) => (prev ? null : "explorer"))
-        }
-        onTogglePanel={() => setIsPanelVisible((prev) => !prev)}
-        onToggleSecondarySidebar={() =>
-          setIsSecondarySidebarVisible((prev) => !prev)
-        }
-      />
+    <ChatProvider>
+      <div className="flex flex-col h-screen overflow-hidden bg-vscode-window">
+        <TitleBar
+          onToggleSidebar={() =>
+            setActiveView((prev) => (prev ? null : "explorer"))
+          }
+          onTogglePanel={() => setIsPanelVisible((prev) => !prev)}
+          onToggleSecondarySidebar={() =>
+            setIsSecondarySidebarVisible((prev) => !prev)
+          }
+        />
 
-      {/* workbench */}
-      <div className="flex flex-1 overflow-hidden">
-        <ActivityBar activeView={activeView} onViewChange={handleViewChange} />
-        {activeView && (
-          <>
-            <Sidebar
-              view={activeView}
-              width={sidebarWidth}
-              onFileOpen={handleFileOpen}
-              onAuthSuccess={() => setActiveView("explorer")}
-            />
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Resize side bar"
-              className="resize-handle resize-handle-vertical"
-              tabIndex={0}
-              onPointerDown={startSidebarResize}
-              onKeyDown={(event) => {
-                if (event.key === "ArrowLeft") {
-                  event.preventDefault();
-                  setSidebarWidth((value) =>
-                    clamp(value - 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
-                  );
-                }
-                if (event.key === "ArrowRight") {
-                  event.preventDefault();
-                  setSidebarWidth((value) =>
-                    clamp(value + 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
-                  );
-                }
-              }}
-            />
-          </>
-        )}
-
-        {/* main-area: editor + panel vertical split */}
-        {!isAgentFullscreen && (
-          <div className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex flex-1 overflow-hidden">
-              <EditorGroup
-                tabs={editorTabs}
-                activeTabKey={activeEditorTabKey}
-                onActiveTabChange={setActiveEditorTabKey}
-                onCloseTab={handleCloseEditorTab}
-                panelRegistry={panelRegistry}
+        {/* workbench */}
+        <div className="flex flex-1 overflow-hidden">
+          <ActivityBar
+            activeView={activeView}
+            onViewChange={handleViewChange}
+          />
+          {activeView && (
+            <>
+              <Sidebar
+                view={activeView}
+                width={sidebarWidth}
+                onFileOpen={handleFileOpen}
+                onAuthSuccess={() => setActiveView("explorer")}
               />
-
-              {selectedStock && (
-                <aside
-                  aria-label={`${selectedStock.name} 상세`}
-                  className="w-[340px] shrink-0 overflow-hidden"
-                >
-                  <StockDetailPanel
-                    stock={selectedStock}
-                    onClose={() => setSelectedStock(null)}
-                    onOpenBigChart={handleOpenBigChart}
-                  />
-                </aside>
-              )}
-            </div>
-            {isPanelVisible && (
-              <>
-                <div
-                  role="separator"
-                  aria-orientation="horizontal"
-                  aria-label="Resize panel"
-                  className="resize-handle resize-handle-horizontal"
-                  tabIndex={0}
-                  onPointerDown={startPanelResize}
-                  onKeyDown={(event) => {
-                    if (event.key === "ArrowUp") {
-                      event.preventDefault();
-                      resizePanelWithKeyboard(10);
-                    }
-                    if (event.key === "ArrowDown") {
-                      event.preventDefault();
-                      resizePanelWithKeyboard(-10);
-                    }
-                  }}
-                />
-                <PanelArea height={panelHeight} />
-              </>
-            )}
-          </div>
-        )}
-
-        {isSecondarySidebarVisible && (
-          <>
-            {!isAgentFullscreen && (
               <div
                 role="separator"
                 aria-orientation="vertical"
-                aria-label="Resize secondary side bar"
+                aria-label="Resize side bar"
                 className="resize-handle resize-handle-vertical"
                 tabIndex={0}
-                onPointerDown={startSecondarySidebarResize}
+                onPointerDown={startSidebarResize}
                 onKeyDown={(event) => {
                   if (event.key === "ArrowLeft") {
                     event.preventDefault();
-                    setSecondarySidebarWidth((value) =>
-                      clamp(value + 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+                    setSidebarWidth((value) =>
+                      clamp(value - 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
                     );
                   }
                   if (event.key === "ArrowRight") {
                     event.preventDefault();
-                    setSecondarySidebarWidth((value) =>
-                      clamp(value - 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+                    setSidebarWidth((value) =>
+                      clamp(value + 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
                     );
                   }
                 }}
               />
-            )}
-            <aside
-              aria-label="Secondary Sidebar"
-              className={`shrink-0 flex flex-col bg-vscode-sidebar text-vscode-fg-sidebar z-(--z-sidebar) ${
-                isAgentFullscreen
-                  ? "flex-1 border-none"
-                  : "border-l border-vscode-border-sidebar"
-              }`}
-              style={isAgentFullscreen ? {} : { width: secondarySidebarWidth }}
-            >
-              <div className="flex-1 flex flex-col min-h-0 relative">
-                <AgentPanel
-                  onClose={() => setIsSecondarySidebarVisible(false)}
-                  onExpand={handleToggleAgentFullscreen}
-                  isExpanded={isAgentFullscreen}
+            </>
+          )}
+
+          {/* main-area: editor + panel vertical split */}
+          {!isAgentFullscreen && (
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex flex-1 overflow-hidden">
+                <EditorGroup
+                  tabs={editorTabs}
+                  activeTabKey={activeEditorTabKey}
+                  onActiveTabChange={setActiveEditorTabKey}
+                  onCloseTab={handleCloseEditorTab}
+                  panelRegistry={panelRegistry}
                 />
+
+                {selectedStock && (
+                  <aside
+                    aria-label={`${selectedStock.name} 상세`}
+                    className="w-[340px] shrink-0 overflow-hidden"
+                  >
+                    <StockDetailPanel
+                      stock={selectedStock}
+                      onClose={() => setSelectedStock(null)}
+                      onOpenBigChart={handleOpenBigChart}
+                    />
+                  </aside>
+                )}
               </div>
-            </aside>
-          </>
-        )}
+              {isPanelVisible && (
+                <>
+                  <div
+                    role="separator"
+                    aria-orientation="horizontal"
+                    aria-label="Resize panel"
+                    className="resize-handle resize-handle-horizontal"
+                    tabIndex={0}
+                    onPointerDown={startPanelResize}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowUp") {
+                        event.preventDefault();
+                        resizePanelWithKeyboard(10);
+                      }
+                      if (event.key === "ArrowDown") {
+                        event.preventDefault();
+                        resizePanelWithKeyboard(-10);
+                      }
+                    }}
+                  />
+                  <PanelArea height={panelHeight} />
+                </>
+              )}
+            </div>
+          )}
+
+          {isSecondarySidebarVisible && (
+            <>
+              {!isAgentFullscreen && (
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize secondary side bar"
+                  className="resize-handle resize-handle-vertical"
+                  tabIndex={0}
+                  onPointerDown={startSecondarySidebarResize}
+                  onKeyDown={(event) => {
+                    if (event.key === "ArrowLeft") {
+                      event.preventDefault();
+                      setSecondarySidebarWidth((value) =>
+                        clamp(value + 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+                      );
+                    }
+                    if (event.key === "ArrowRight") {
+                      event.preventDefault();
+                      setSecondarySidebarWidth((value) =>
+                        clamp(value - 10, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
+                      );
+                    }
+                  }}
+                />
+              )}
+              <aside
+                aria-label="Secondary Sidebar"
+                className={`shrink-0 flex flex-col bg-vscode-sidebar text-vscode-fg-sidebar z-(--z-sidebar) ${
+                  isAgentFullscreen
+                    ? "flex-1 border-none"
+                    : "border-l border-vscode-border-sidebar"
+                }`}
+                style={
+                  isAgentFullscreen ? {} : { width: secondarySidebarWidth }
+                }
+              >
+                <div className="flex-1 flex flex-col min-h-0 relative">
+                  <AgentPanel
+                    onClose={() => setIsSecondarySidebarVisible(false)}
+                    onExpand={handleToggleAgentFullscreen}
+                    isExpanded={isAgentFullscreen}
+                  />
+                </div>
+              </aside>
+            </>
+          )}
+        </div>
+
+        <StatusBar
+          notificationsActive={notificationsOpen}
+          onBellClick={() => setNotificationsOpen((prev) => !prev)}
+        />
+
+        {/* 전역 알림 센터 — 종/▼ 로 토글 */}
+        <NotificationCenter
+          items={notifications}
+          open={notificationsOpen}
+          onOpenChange={setNotificationsOpen}
+        />
+
+        {/* 설정 패널 — 액티비티바 기어로 열림 */}
+        <SettingsPanel />
+
+        {/* 패닉 핫키 — ESC 두 번이면 Source Control 위장화면 */}
+        <PanicMode />
       </div>
-
-      <StatusBar
-        notificationsActive={notificationsOpen}
-        onBellClick={() => setNotificationsOpen((prev) => !prev)}
-      />
-
-      {/* 전역 알림 센터 — 종/▼ 로 토글 */}
-      <NotificationCenter
-        items={notifications}
-        open={notificationsOpen}
-        onOpenChange={setNotificationsOpen}
-      />
-
-      {/* 설정 패널 — 액티비티바 기어로 열림 */}
-      <SettingsPanel />
-
-      {/* 패닉 핫키 — ESC 두 번이면 Source Control 위장화면 */}
-      <PanicMode />
-    </div>
+    </ChatProvider>
   );
 }
