@@ -15,6 +15,29 @@ function formatTime(iso?: string): string {
   });
 }
 
+/** 상대 메시지 닉네임을 사용자별 고정 색으로 표시하기 위한 팔레트. */
+const NICK_COLORS = [
+  "#c586c0",
+  "#4ec9b0",
+  "#dcdcaa",
+  "#9cdcfe",
+  "#ce9178",
+  "#569cd6",
+  "#d7ba7d",
+  "#b5cea8",
+  "#f48771",
+  "#4fc1ff",
+];
+
+/** senderId(또는 닉네임) 해시 → 팔레트 색. 같은 사용자는 항상 같은 색. */
+function colorForUser(key: string): string {
+  let h = 0;
+  for (let i = 0; i < key.length; i += 1) {
+    h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  return NICK_COLORS[h % NICK_COLORS.length];
+}
+
 /**
  * 실시간 채팅 패널 — VS Code 의 Claude Code(에이전트) 패널처럼 위장한 전체 채팅.
  * 종목별 채팅은 사용하지 않고 단일 전체 채팅방(GLOBAL_CHAT_ROOM)만 쓴다.
@@ -137,7 +160,7 @@ export function ChatPanel() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2 mb-0.5">
                         <span className="text-[13px] font-semibold text-[#569cd6]">
-                          @you
+                          @{currentNickname ?? "나"}(me)
                         </span>
                         <span className="text-[11px] text-vscode-fg-desc opacity-70 tabular-nums">
                           {formatTime(m.createdAt)}
@@ -151,15 +174,25 @@ export function ChatPanel() {
                 );
               }
 
-              // 상대 메시지 → 에이전트 응답(어시스턴트 턴)처럼 표시
+              // 상대 메시지 → 에이전트 응답(어시스턴트 턴)처럼 표시.
+              // 사용자별로 고정 색을 부여해 누가 말했는지 구분되게 한다.
+              const nickColor = colorForUser(
+                m.senderId ?? m.nickname ?? String(m.chatId ?? ""),
+              );
               return (
                 <div key={m.localId} className="group flex items-start gap-2.5">
-                  <span className="mt-[5px] select-none text-[10px] text-[#c586c0] leading-none">
+                  <span
+                    className="mt-[5px] select-none text-[10px] leading-none"
+                    style={{ color: nickColor }}
+                  >
                     ⏺
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2 font-mono mb-0.5">
-                      <span className="text-[13px] font-semibold text-[#c586c0]">
+                      <span
+                        className="text-[13px] font-semibold"
+                        style={{ color: nickColor }}
+                      >
                         @{m.nickname ?? "agent"}
                       </span>
                       <span className="text-[11px] text-vscode-fg-desc opacity-70 tabular-nums">
