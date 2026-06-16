@@ -1,1 +1,1 @@
-export {};
+export { getNewsTimeline, getNewsDetail } from "./getNews";
