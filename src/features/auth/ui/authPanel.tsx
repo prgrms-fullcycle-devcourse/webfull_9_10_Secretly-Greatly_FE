@@ -64,6 +64,7 @@ export function AuthPanel({
   const setSession = useAuthStore((s) => s.setSession);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hydrate = useAuthStore((s) => s.hydrate);
+  const clear = useAuthStore((s) => s.clear);
 
   // 마운트 후 저장된 세션 복원 — 초기 렌더는 항상 비로그인이라 하이드레이션이 일치한다.
   useEffect(() => {
@@ -71,7 +72,17 @@ export function AuthPanel({
   }, [hydrate]);
 
   // 로그인 상태면 로그인 폼 대신 내 계정(프로필) 화면.
-  if (isAuthenticated) return <AccountPanel />;
+  // 비밀번호 변경 성공 시 → 로그인 화면에 안내를 1회 띄우고 로그아웃(메인=로그인 화면).
+  if (isAuthenticated) {
+    return (
+      <AccountPanel
+        onPasswordChanged={(text) => {
+          setNotice({ type: "success", text });
+          clear();
+        }}
+      />
+    );
+  }
 
   const copy = MODE_COPY[mode];
 
