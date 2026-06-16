@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getStoredToken } from "@/shared/api";
+import { getStoredToken, onAuthChange } from "@/shared/api";
 import { getNewsTimeline } from "../api";
 import type { NewsItem } from "./types";
 
@@ -49,9 +49,14 @@ export function useNewsTimeline(): UseNewsTimelineResult {
 
   // 마운트 후 1회 로드. setTimeout 으로 한 틱 미뤄 effect 동기 setState 를 피한다
   // (SSR/하이드레이션 불일치 + 캐스케이드 렌더 회피).
+  // 로그인/로그아웃(auth 변경) 시에도 새로고침 없이 다시 로드한다.
   useEffect(() => {
     const id = setTimeout(load, 0);
-    return () => clearTimeout(id);
+    const off = onAuthChange(() => load());
+    return () => {
+      clearTimeout(id);
+      off();
+    };
   }, [load]);
 
   return { items, totalCount, status, error, refetch: load };

@@ -5,6 +5,7 @@ import type { Socket } from "socket.io-client";
 import {
   getStoredSession,
   getStoredToken,
+  onAuthChange,
   type StoredSession,
 } from "@/shared/api";
 import { getChatMessages, reportChat } from "../api";
@@ -115,9 +116,12 @@ export function useChatSocket(
 
   // 세션 복원 — 초기 렌더는 서버·클라 모두 null(로그인 안내)이라 하이드레이션이 일치하고,
   // 마운트 후 비동기로 읽어 setState 한다(동기 effect-setState 회피).
+  // 또한 로그인/로그아웃(auth 변경) 시 즉시 세션을 다시 읽어, 새로고침 없이
+  // 소켓이 붙고/끊기도록 한다.
   useEffect(() => {
-    const hydrate = async () => setSession(getStoredSession());
-    void hydrate();
+    const sync = async () => setSession(getStoredSession());
+    void sync();
+    return onAuthChange(() => void sync());
   }, []);
 
   const currentViewer = session?.userId ?? null;

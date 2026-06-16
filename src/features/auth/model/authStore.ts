@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   clearStoredSession,
   getStoredSession,
+  notifyAuthChange,
   setStoredSession,
   setUnauthorizedHandler,
 } from "@/shared/api";
@@ -53,6 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     };
     setStoredSession(next);
     set({ ...next, isAuthenticated: true });
+    notifyAuthChange();
   },
   clear: () => {
     clearStoredSession();
@@ -63,6 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken: null,
       isAuthenticated: false,
     });
+    notifyAuthChange();
   },
 }));
 
