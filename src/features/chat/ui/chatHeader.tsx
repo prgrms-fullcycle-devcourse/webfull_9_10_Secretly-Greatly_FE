@@ -3,7 +3,8 @@
 import { Codicon } from "@/shared/ui";
 
 interface ChatHeaderProps {
-  room: string;
+  /** 위장용 워크스페이스 라벨(전체 채팅 고정). */
+  label: string;
   viewMode: "chat" | "history";
   setViewMode: (mode: "chat" | "history") => void;
   status: string;
@@ -11,7 +12,7 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({
-  room,
+  label,
   viewMode,
   setViewMode,
   status,
@@ -36,7 +37,7 @@ export function ChatHeader({
       <div className="flex items-center gap-1.5 font-mono text-[11px] text-vscode-fg-desc truncate bg-vscode-input px-2 py-0.5 rounded-[4px] border border-vscode-border-input">
         <Codicon icon="codicon-repo" size={12} className="opacity-70" />
         <span>workspace/</span>
-        <span className="text-[#3794ff] font-semibold">{room}</span>
+        <span className="text-[#3794ff] font-semibold">{label}</span>
       </div>
       <button
         type="button"

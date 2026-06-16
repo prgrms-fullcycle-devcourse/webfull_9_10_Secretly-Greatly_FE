@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Codicon } from "@/shared/ui";
-import { GLOBAL_CHAT_ROOM, useChatSocket } from "../model";
+import { GLOBAL_CHAT_LABEL, useChatSocket } from "../model";
 import { ChatHeader } from "./chatHeader";
 import { ChatHistoryView } from "./chatHistoryView";
 import { ChatInput } from "./chatInput";
@@ -16,15 +16,12 @@ function formatTime(iso?: string): string {
 }
 
 /**
- * 실시간 채팅 패널 — VS Code 의 Claude Code(에이전트) 패널처럼 위장한 종목 채팅.
+ * 실시간 채팅 패널 — VS Code 의 Claude Code(에이전트) 패널처럼 위장한 전체 채팅.
+ * 종목별 채팅은 사용하지 않고 단일 전체 채팅방(GLOBAL_CHAT_ROOM)만 쓴다.
  * 통신/입장/전송/쿨타임/신고는 useChatSocket 이 담당한다.
  * (위젯 agentPanel 이 이 컴포넌트를 렌더한다)
  */
 export function ChatPanel() {
-  // 임시: BE 는 방을 종목 코드로 식별하므로, DB 에 존재하는 종목 코드로 입장한다.
-  const [room, setRoom] = useState(GLOBAL_CHAT_ROOM);
-  const [roomInput, setRoomInput] = useState(GLOBAL_CHAT_ROOM);
-  const [roomEditing, setRoomEditing] = useState(false);
   const [viewMode, setViewMode] = useState<"chat" | "history">("chat");
   const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
   const [agentMode, setAgentMode] = useState("Auto");
@@ -43,7 +40,7 @@ export function ChatPanel() {
     sendMessage,
     reportMessage,
     clearFeedback,
-  } = useChatSocket({ ticker: room });
+  } = useChatSocket();
 
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -52,15 +49,8 @@ export function ChatPanel() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const live = status === "joined" || status === "connected";
   const connecting = status === "connecting";
   const cooldownSec = Math.ceil(cooldownRemaining / 1000);
-
-  const commitRoom = () => {
-    const code = roomInput.trim();
-    if (code) setRoom(code);
-    setRoomEditing(false);
-  };
 
   const handleSend = () => {
     if (!input.trim() || !canSend) return;
@@ -76,7 +66,7 @@ export function ChatPanel() {
     <div className="flex flex-col h-full bg-vscode-sidebar text-vscode-fg-sidebar min-w-0 text-[13px]">
       {/* ── 대화 헤더 (뒤로 + 컨텍스트) ── */}
       <ChatHeader
-        room={room}
+        label={GLOBAL_CHAT_LABEL}
         viewMode={viewMode}
         setViewMode={setViewMode}
         status={status}
@@ -238,12 +228,6 @@ export function ChatPanel() {
             handleSend={handleSend}
             canSend={canSend}
             cooldownSec={cooldownSec}
-            roomEditing={roomEditing}
-            setRoomEditing={setRoomEditing}
-            roomInput={roomInput}
-            setRoomInput={setRoomInput}
-            room={room}
-            commitRoom={commitRoom}
             modeDropdownOpen={modeDropdownOpen}
             setModeDropdownOpen={setModeDropdownOpen}
             agentMode={agentMode}

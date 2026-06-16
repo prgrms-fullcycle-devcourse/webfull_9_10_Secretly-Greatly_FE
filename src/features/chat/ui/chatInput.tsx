@@ -1,6 +1,7 @@
 "use client";
 
 import { Codicon } from "@/shared/ui";
+import { GLOBAL_CHAT_LABEL } from "../model";
 
 interface ChatInputProps {
   input: string;
@@ -8,12 +9,6 @@ interface ChatInputProps {
   handleSend: () => void;
   canSend: boolean;
   cooldownSec: number;
-  roomEditing: boolean;
-  setRoomEditing: (value: boolean) => void;
-  roomInput: string;
-  setRoomInput: (value: string) => void;
-  room: string;
-  commitRoom: () => void;
   modeDropdownOpen: boolean;
   setModeDropdownOpen: (value: boolean) => void;
   agentMode: string;
@@ -26,12 +21,6 @@ export function ChatInput({
   handleSend,
   canSend,
   cooldownSec,
-  roomEditing,
-  setRoomEditing,
-  roomInput,
-  setRoomInput,
-  room,
-  commitRoom,
   modeDropdownOpen,
   setModeDropdownOpen,
   agentMode,
@@ -59,39 +48,13 @@ export function ChatInput({
             <Codicon icon="codicon-add" size={14} />
           </span>
 
-          {/* 방(종목) 코드 — 컨텍스트 칩 자리 */}
-          {roomEditing ? (
-            <input
-              autoFocus
-              value={roomInput}
-              onChange={(e) => setRoomInput(e.target.value)}
-              onBlur={commitRoom}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  commitRoom();
-                }
-                if (e.key === "Escape") {
-                  setRoomInput(room);
-                  setRoomEditing(false);
-                }
-              }}
-              className="w-24 bg-[#1e1e1e] text-vscode-fg-input px-1.5 py-0.5 border border-vscode-focus text-[11px] font-mono outline-none rounded-[3px]"
-              aria-label="방 종목 코드"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setRoomInput(room);
-                setRoomEditing(true);
-              }}
-              className="flex items-center gap-1.5 px-1.5 py-0.5 text-[11px] font-mono text-vscode-fg-desc hover:text-vscode-fg-sidebar rounded-[3px] bg-[#2d2d2d] border border-[#454545] cursor-pointer shadow-sm transition-colors"
-              title="Change Workspace Context"
-            >
-              <Codicon icon="codicon-repo" size={12} /> {room}
-            </button>
-          )}
+          {/* 전체 채팅 컨텍스트 칩 (위장용, 고정 — 종목별 전환 없음) */}
+          <span
+            className="flex items-center gap-1.5 px-1.5 py-0.5 text-[11px] font-mono text-vscode-fg-desc rounded-[3px] bg-[#2d2d2d] border border-[#454545] shadow-sm"
+            title="Workspace Context"
+          >
+            <Codicon icon="codicon-repo" size={12} /> {GLOBAL_CHAT_LABEL}
+          </span>
 
           <div className="relative">
             <button
