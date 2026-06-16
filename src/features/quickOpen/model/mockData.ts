@@ -48,22 +48,22 @@ export const RECENT_FILES: RecentFile[] = [
   {
     filename: "ALL.sheet",
     name: "ALL.sheet",
-    path: "Secretly_Greatly\\src\\watchlist",
+    path: "Secretly_Greatly\\src\\stocks",
   },
   {
-    filename: "KOSPI.sheet",
-    name: "KOSPI.sheet",
-    path: "Secretly_Greatly\\src\\watchlist",
+    filename: "DOMESTIC.sheet",
+    name: "DOMESTIC.sheet",
+    path: "Secretly_Greatly\\src\\stocks",
   },
   {
-    filename: "NASDAQ.sheet",
-    name: "NASDAQ.sheet",
-    path: "Secretly_Greatly\\src\\watchlist",
+    filename: "OVERSEAS.sheet",
+    name: "OVERSEAS.sheet",
+    path: "Secretly_Greatly\\src\\stocks",
   },
   {
-    filename: "CRYPTO.sheet",
-    name: "CRYPTO.sheet",
-    path: "Secretly_Greatly\\src\\watchlist",
+    filename: "COIN.sheet",
+    name: "COIN.sheet",
+    path: "Secretly_Greatly\\src\\stocks",
   },
   {
     filename: "PRD-vscode-design-system.md",

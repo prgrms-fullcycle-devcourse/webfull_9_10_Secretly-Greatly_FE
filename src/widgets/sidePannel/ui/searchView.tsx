@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Codicon, FileIcon, IconButton } from "@/shared/ui";
 import { createPosition, usePositionsStore } from "@/entities/position";
+import { useFavoritesStore } from "@/features/favorites";
+import { getStocks } from "@/features/stocks";
 
 interface SearchOptions {
   caseSensitive: boolean;
@@ -14,19 +16,10 @@ interface StockResult {
   id: string;
   name: string;
   code: string;
-  market: "KOSPI" | "NASDAQ" | "CRYPTO";
+  market: "DOMESTIC" | "OVERSEAS" | "COIN";
+  /** 현재가 (미적재 시 null) — 보유 목록 추가 시 currentPrice 로 사용 (화면 표시 X). */
+  price: number | null;
 }
-
-const STOCKS: StockResult[] = [
-  { id: "1", name: "삼성전자", code: "005930.KS", market: "KOSPI" },
-  { id: "2", name: "SK하이닉스", code: "000660.KS", market: "KOSPI" },
-  { id: "3", name: "카카오", code: "035720.KS", market: "KOSPI" },
-  { id: "4", name: "LG에너지솔루션", code: "373220.KS", market: "KOSPI" },
-  { id: "5", name: "Apple Inc.", code: "AAPL.US", market: "NASDAQ" },
-  { id: "6", name: "NVIDIA Corp.", code: "NVDA.US", market: "NASDAQ" },
-  { id: "7", name: "Tesla, Inc.", code: "TSLA.US", market: "NASDAQ" },
-  { id: "8", name: "비트코인", code: "BTC.KRW", market: "CRYPTO" },
-];
 
 function SearchToggle({
   active,
@@ -195,28 +188,70 @@ export function SearchView() {
     wholeWord: false,
     useRegex: false,
   });
-  const [starred, setStarred] = useState<Set<string>>(new Set(["1"]));
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
+  const [results, setResults] = useState<StockResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [error, setError] = useState(false);
+
+  // 즐겨찾기 공유 스토어 — ★ 버튼이 watchlist 트리·시트와 동기화.
+  const favoriteItems = useFavoritesStore((s) => s.items);
+  const toggleFavorite = useFavoritesStore((s) => s.toggle);
+  const isFavorite = (code: string) =>
+    favoriteItems.some((f) => f.code === code);
 
   // 보유 종목 공유 스토어 — + 버튼이 물타기 패널 목록에 추가/제거.
   const positions = usePositionsStore((state) => state.positions);
   const addPosition = usePositionsStore((state) => state.addPosition);
   const removePosition = usePositionsStore((state) => state.removePosition);
 
+  // 검색어 변경 시 BE 종목 검색 (GET /api/stocks?keyword=). 300ms 디바운스 + stale 응답 무시.
+  useEffect(() => {
+    const keyword = query.trim();
+    let ignore = false;
+    const handle = setTimeout(
+      () => {
+        if (!keyword) {
+          if (!ignore) {
+            setResults([]);
+            setError(false);
+            setSearching(false);
+          }
+          return;
+        }
+        setSearching(true);
+        getStocks({ keyword })
+          .then((items) => {
+            if (ignore) return;
+            setError(false);
+            setResults(
+              items.map((s) => ({
+                id: s.code,
+                name: s.name,
+                code: s.code,
+                market: s.market,
+                price: s.price,
+              })),
+            );
+          })
+          .catch(() => {
+            if (ignore) return;
+            setError(true);
+            setResults([]);
+          })
+          .finally(() => {
+            if (!ignore) setSearching(false);
+          });
+      },
+      keyword ? 300 : 0,
+    );
+    return () => {
+      ignore = true;
+      clearTimeout(handle);
+    };
+  }, [query]);
+
   const toggle = (key: keyof SearchOptions) => {
     setOptions((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const toggleStar = (id: string) => {
-    setStarred((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
   };
 
   const toggleAdded = (stock: StockResult) => {
@@ -238,14 +273,6 @@ export function SearchView() {
       return next;
     });
   };
-
-  const results = query
-    ? STOCKS.filter(
-        (s) =>
-          s.name.toLowerCase().startsWith(query.toLowerCase()) ||
-          s.code.toLowerCase().startsWith(query.toLowerCase()),
-      )
-    : [];
 
   return (
     <div className="flex h-full flex-col">
@@ -401,6 +428,12 @@ export function SearchView() {
           <div className="search-results select-none">
             Search for text in the workspace
           </div>
+        ) : searching ? (
+          <div className="search-results select-none">검색 중…</div>
+        ) : error ? (
+          <div className="search-results select-none">
+            서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.
+          </div>
         ) : results.length === 0 ? (
           <div className="search-results select-none">
             No results for &quot;{query}&quot;
@@ -428,10 +461,16 @@ export function SearchView() {
                   query={query}
                   added={positions.some((p) => p.id === stock.code)}
                   bookmarked={bookmarked.has(stock.id)}
-                  starred={starred.has(stock.id)}
+                  starred={isFavorite(stock.code)}
                   onToggleAdded={() => toggleAdded(stock)}
                   onToggleBookmark={() => toggleBookmark(stock.id)}
-                  onToggleStar={() => toggleStar(stock.id)}
+                  onToggleStar={() =>
+                    toggleFavorite({
+                      code: stock.code,
+                      name: stock.name,
+                      market: stock.market,
+                    })
+                  }
                 />
               ))}
             </div>

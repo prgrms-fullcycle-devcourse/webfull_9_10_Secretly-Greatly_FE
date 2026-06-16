@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Codicon, FileIcon } from "@/shared/ui";
+import { Codicon, FileIcon, IconButton } from "@/shared/ui";
 
 export interface TreeNode {
   id: string;
   name: string;
   type: "file" | "folder";
   children?: TreeNode[];
+  /** 즐겨찾기 항목 — 행 오른쪽에 ★ 표시. */
+  favorite?: boolean;
 }
 
 export interface TreeFileOpenPayload {
@@ -23,6 +25,8 @@ interface TreeItemProps {
   selectedKey: string | null;
   onSelect: (id: string) => void;
   onFileOpen?: (file: TreeFileOpenPayload) => void;
+  /** 즐겨찾기(★) 항목에서 별 클릭 시 — node.id(종목 코드)로 해제. */
+  onFavoriteRemove?: (code: string) => void;
 }
 
 function TreeItem({
@@ -32,6 +36,7 @@ function TreeItem({
   selectedKey,
   onSelect,
   onFileOpen,
+  onFavoriteRemove,
 }: TreeItemProps) {
   const [expanded, setExpanded] = useState(depth < 2);
   const isSelected = selectedKey === node.id;
@@ -94,38 +99,62 @@ function TreeItem({
 
   return (
     <div role="none">
-      <button
-        type="button"
-        role="treeitem"
-        aria-expanded={isFolder ? expanded : undefined}
-        aria-selected={isSelected}
-        aria-level={depth + 1}
-        className="tree-item"
-        data-folder={isFolder}
-        data-selected={isSelected}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        style={{ paddingLeft: 16 + depth * 16 }}
-      >
-        {/* twistie */}
-        <span className="tree-twistie">
-          {isFolder && (
-            <Codicon
-              icon={expanded ? "codicon-chevron-down" : "codicon-chevron-right"}
-              size={16}
-            />
-          )}
-        </span>
+      <div className="relative">
+        <button
+          type="button"
+          role="treeitem"
+          aria-expanded={isFolder ? expanded : undefined}
+          aria-selected={isSelected}
+          aria-level={depth + 1}
+          className="tree-item"
+          data-folder={isFolder}
+          data-selected={isSelected}
+          onClick={handleClick}
+          onKeyDown={handleKeyDown}
+          style={{ paddingLeft: 16 + depth * 16 }}
+        >
+          {/* twistie */}
+          <span className="tree-twistie">
+            {isFolder && (
+              <Codicon
+                icon={
+                  expanded ? "codicon-chevron-down" : "codicon-chevron-right"
+                }
+                size={16}
+              />
+            )}
+          </span>
 
-        {/* file icon (folders show no icon) */}
-        {!isFolder && (
-          <span className="tree-file-icon" aria-hidden="true">
-            <FileIcon filename={node.name} size={14} />
+          {/* file icon (folders show no icon) */}
+          {!isFolder && (
+            <span className="tree-file-icon" aria-hidden="true">
+              <FileIcon filename={node.name} size={14} />
+            </span>
+          )}
+
+          <span className={node.favorite ? "tree-label pr-7" : "tree-label"}>
+            {node.name}
+          </span>
+        </button>
+
+        {node.favorite && (
+          <span className="absolute inset-y-0 right-2 flex items-center">
+            <IconButton
+              variant="search"
+              label="즐겨찾기 해제"
+              pressed
+              onClick={(event) => {
+                event.stopPropagation();
+                onFavoriteRemove?.(node.id);
+              }}
+              icon="codicon-star-empty"
+              iconSize={13}
+              iconClassName="text-yellow-400"
+              className="h-4 w-4"
+            />
           </span>
         )}
-
-        <span className="tree-label">{node.name}</span>
-      </button>
+      </div>
 
       {isFolder &&
         expanded &&
@@ -138,6 +167,7 @@ function TreeItem({
             selectedKey={selectedKey}
             onSelect={onSelect}
             onFileOpen={onFileOpen}
+            onFavoriteRemove={onFavoriteRemove}
           />
         ))}
     </div>
@@ -148,12 +178,14 @@ interface TreeViewProps {
   nodes: TreeNode[];
   label?: string;
   onFileOpen?: (file: TreeFileOpenPayload) => void;
+  onFavoriteRemove?: (code: string) => void;
 }
 
 export function TreeView({
   nodes,
   label = "Explorer",
   onFileOpen,
+  onFavoriteRemove,
 }: TreeViewProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
@@ -168,6 +200,7 @@ export function TreeView({
           selectedKey={selectedKey}
           onSelect={setSelectedKey}
           onFileOpen={onFileOpen}
+          onFavoriteRemove={onFavoriteRemove}
         />
       ))}
     </div>
