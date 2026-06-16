@@ -41,6 +41,7 @@ import {
   type StockSummary,
 } from "@/widgets/stockDetail";
 import { AgentPanel } from "@/widgets/agentPanel";
+import { SettingsPanel } from "@/widgets/settingsPanel";
 
 const SIDEBAR_MIN_WIDTH = 180;
 const SIDEBAR_MAX_WIDTH = 560;
@@ -147,7 +148,7 @@ export function IdeShell({
 
   const handleViewChange = (id: string) => {
     if (id === "settings") {
-      window.dispatchEvent(new CustomEvent("open-panic-settings"));
+      window.dispatchEvent(new CustomEvent("open-settings"));
       return;
     }
     setActiveView((prev) => (prev === id ? null : id));
@@ -444,7 +445,10 @@ export function IdeShell({
         onOpenChange={setNotificationsOpen}
       />
 
-      {/* 패닉 핫키 — ESC 두 번이면 위장 설정화면 */}
+      {/* 설정 패널 — 액티비티바 기어로 열림 */}
+      <SettingsPanel />
+
+      {/* 패닉 핫키 — ESC 두 번이면 Source Control 위장화면 */}
       <PanicMode />
     </div>
   );
