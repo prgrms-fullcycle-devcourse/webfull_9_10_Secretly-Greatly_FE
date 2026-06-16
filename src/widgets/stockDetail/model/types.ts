@@ -1,4 +1,4 @@
-/** 워치리스트 행 클릭 시 상세 패널로 넘기는 종목 요약. WatchlistStock 과 구조 호환. */
+/** 종목 행 클릭 시 상세 패널로 넘기는 종목 요약. StockRow 와 구조 호환. */
 export interface StockSummary {
   code: string;
   name: string;
@@ -8,5 +8,5 @@ export interface StockSummary {
   change: string;
   /** 거래량 (예: "21.15M") */
   volume: string;
-  market: "KOSPI" | "NASDAQ" | "CRYPTO";
+  market: "DOMESTIC" | "OVERSEAS" | "COIN";
 }

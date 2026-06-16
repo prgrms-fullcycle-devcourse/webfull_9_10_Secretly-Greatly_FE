@@ -13,6 +13,16 @@ const NOTICE_COLOR: Record<AuthNoticeType, string> = {
 };
 
 /** auth 패널 공통 상태 메시지 — 로그인/회원가입/비밀번호 변경에서 공유. */
-export function AuthNotice({ type, text }: AuthNoticeState) {
-  return <p className={`text-[12px] ${NOTICE_COLOR[type]}`}>{text}</p>;
+export function AuthNotice({
+  type,
+  text,
+  className = "",
+}: AuthNoticeState & { className?: string }) {
+  return (
+    <p
+      className={`text-[12px] ${NOTICE_COLOR[type]}${className ? ` ${className}` : ""}`}
+    >
+      {text}
+    </p>
+  );
 }

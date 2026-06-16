@@ -9,7 +9,7 @@ export function createPosition(stock: {
   code: string;
   name: string;
   market: Market;
-  price?: string | number;
+  price?: string | number | null;
 }): Position {
   const currentPrice =
     typeof stock.price === "string"
@@ -19,7 +19,7 @@ export function createPosition(stock: {
     id: stock.code,
     name: stock.name,
     ticker: stock.code,
-    currency: stock.market === "NASDAQ" ? "USD" : "KRW",
+    currency: stock.market === "OVERSEAS" ? "USD" : "KRW",
     avgPrice: 0,
     quantity: 0,
     currentPrice,

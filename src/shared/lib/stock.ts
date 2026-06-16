@@ -1,5 +1,5 @@
-/** 시장 구분 — 국장(KOSPI) · 미장(NASDAQ) · 코인(CRYPTO). */
-export type Market = "KOSPI" | "NASDAQ" | "CRYPTO";
+/** 시장 구분 — BE 정합: 국장(DOMESTIC) · 미장(OVERSEAS) · 코인(COIN). */
+export type Market = "DOMESTIC" | "OVERSEAS" | "COIN";
 
 /** 등락 문자열이 상승인지 (음수 부호가 아니면 상승). */
 export function isUp(change: string): boolean {
@@ -44,7 +44,7 @@ export function formatByMarket(
   market: Market,
 ): string {
   if (value == null) return "—";
-  return market === "NASDAQ"
+  return market === "OVERSEAS"
     ? value.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,

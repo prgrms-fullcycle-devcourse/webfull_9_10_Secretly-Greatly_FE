@@ -12,6 +12,7 @@ import {
 import { PositionsPanel } from "@/features/positions";
 import { PanicMode } from "@/features/panichot";
 import { registerAuthUnauthorizedHandler } from "@/features/auth";
+import { useFavoritesStore } from "@/features/favorites";
 
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
   {
@@ -34,7 +35,7 @@ import { PanelArea } from "@/widgets/terminalPanel";
 import { ActivityBar } from "@/widgets/activityBar";
 import { StatusBar } from "@/widgets/statusBar";
 import { TitleBar } from "@/widgets/titleBar";
-import { WatchlistSheetPanel } from "@/widgets/watchlistSheet";
+import { StocksSheetPanel } from "@/widgets/stocksSheet";
 import {
   StockBigChartPanel,
   StockDetailPanel,
@@ -59,8 +60,8 @@ function getPanelMaxHeight() {
   );
 }
 
-function isWatchlistSheet(file: TreeFileOpenPayload) {
-  return file.path.at(-1) === "watchlist" && file.name.endsWith(".sheet");
+function isStocksSheet(file: TreeFileOpenPayload) {
+  return file.path.at(-1) === "stocks" && file.name.endsWith(".sheet");
 }
 
 function createEditorTab(file: TreeFileOpenPayload): MockTab {
@@ -72,13 +73,13 @@ function createEditorTab(file: TreeFileOpenPayload): MockTab {
     return { ...POSITIONS_TAB };
   }
 
-  if (isWatchlistSheet(file)) {
+  if (isStocksSheet(file)) {
     return {
       id: file.id,
       filename: file.name,
       path: file.path,
       content: [],
-      view: "watchlistSheet",
+      view: "stocksSheet",
     };
   }
 
@@ -125,16 +126,20 @@ export function IdeShell({
     Record<string, StockSummary>
   >({});
 
-  // 401 자동 로그아웃 핸들러 1회 등록 (항상 마운트되는 진입점).
+  // 앱 진입 시 1회: 401 자동 로그아웃 핸들러 등록 + 즐겨찾기 localStorage 복원.
   useEffect(() => {
     registerAuthUnauthorizedHandler();
+    useFavoritesStore.getState().hydrate();
   }, []);
 
   const panelRegistry: Record<string, (tab: MockTab) => ReactNode> = {
     newsFeed: () => <NewsFeedPanel />,
     positions: () => <PositionsPanel />,
-    watchlistSheet: (tab) => (
-      <WatchlistSheetPanel
+    stocksSheet: (tab) => (
+      // key={tab.id}: 시트 탭 전환 시 패널 remount → activeMarket 이 파일명 기준으로 재초기화.
+      // (effect 내 setState 동기화는 프로젝트 lint 금지라 key 방식으로 처리)
+      <StocksSheetPanel
+        key={tab.id}
         filename={tab.filename}
         onSelectStock={setSelectedStock}
         selectedCode={selectedStock?.code ?? null}

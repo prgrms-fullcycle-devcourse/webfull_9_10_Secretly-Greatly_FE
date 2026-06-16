@@ -7,32 +7,19 @@ export const EXPLORER_TREE: TreeNode[] = [
     type: "folder",
     children: [
       {
-        id: "watchlist",
-        name: "watchlist",
+        id: "stocks",
+        name: "stocks",
         type: "folder",
         children: [
           "ALL.sheet",
-          "KOSPI.sheet",
-          "NASDAQ.sheet",
-          "CRYPTO.sheet",
+          "DOMESTIC.sheet",
+          "OVERSEAS.sheet",
+          "COIN.sheet",
         ].map((filename) => ({
-          id: `watchlist-${filename}`,
+          id: `stocks-${filename}`,
           name: filename,
           type: "file" as const,
         })),
-      },
-      { id: "views", name: "views", type: "folder", children: [] },
-      {
-        id: "news",
-        name: "news",
-        type: "folder",
-        children: [
-          {
-            id: "news-feed",
-            name: "news.feed",
-            type: "file",
-          },
-        ],
       },
       {
         id: "my-stock",
@@ -47,30 +34,25 @@ export const EXPLORER_TREE: TreeNode[] = [
         ],
       },
       {
-        id: "features",
-        name: "features",
+        id: "news",
+        name: "news",
         type: "folder",
         children: [
-          "auth",
-          "market",
-          "alerts",
-          "chat",
-          "command-palette",
-          "positions",
-          "settings",
-          "panic-mode",
-        ].map((name) => ({
-          id: name,
-          name,
-          type: "folder" as const,
-          children: ["api", "model", "ui"].map((sub) => ({
-            id: `${name}-${sub}`,
-            name: sub,
-            type: "folder" as const,
-            children: [],
-          })),
-        })),
+          {
+            id: "news-feed",
+            name: "news.feed",
+            type: "file",
+          },
+        ],
       },
+      {
+        // 자식(즐겨찾기 종목)은 favoritesStore 에서 런타임에 주입한다.
+        id: "watchlist",
+        name: "watchlist",
+        type: "folder",
+        children: [],
+      },
+      { id: "views", name: "views", type: "folder", children: [] },
       { id: "entities", name: "entities", type: "folder", children: [] },
       {
         id: "shared",

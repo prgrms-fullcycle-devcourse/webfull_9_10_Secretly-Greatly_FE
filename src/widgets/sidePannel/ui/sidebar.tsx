@@ -1,12 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AuthPanel } from "@/features/auth";
+import { useFavoritesStore } from "@/features/favorites";
 import { Codicon, IconButton } from "@/shared/ui";
-import type { TreeFileOpenPayload } from "./treeView";
+import type { TreeFileOpenPayload, TreeNode } from "./treeView";
 import { TreeView } from "./treeView";
 import { SearchView } from "./searchView";
 import { EXPLORER_TREE } from "../model/mockData";
+
+/** EXPLORER_TREE 의 watchlist 폴더 자식을 즐겨찾기 스토어로 채운다 (id = 종목 코드). */
+function injectFavorites(
+  nodes: TreeNode[],
+  favorites: { code: string; name: string }[],
+): TreeNode[] {
+  return nodes.map((node) => {
+    if (node.id === "watchlist") {
+      return {
+        ...node,
+        children: favorites.map((f) => ({
+          id: f.code,
+          name: f.name,
+          type: "file" as const,
+          favorite: true,
+        })),
+      };
+    }
+    if (node.children) {
+      return { ...node, children: injectFavorites(node.children, favorites) };
+    }
+    return node;
+  });
+}
 
 const STUB_VIEWS: Record<string, string> = {
   scm: "Source Control",
@@ -81,6 +106,13 @@ function ExplorerView({
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
 
+  const favorites = useFavoritesStore((s) => s.items);
+  const removeFavorite = useFavoritesStore((s) => s.remove);
+  const tree = useMemo(
+    () => injectFavorites(EXPLORER_TREE, favorites),
+    [favorites],
+  );
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <SectionHeader
@@ -99,9 +131,10 @@ function ExplorerView({
       />
       {folderOpen && (
         <TreeView
-          nodes={EXPLORER_TREE}
+          nodes={tree}
           label="Explorer file tree"
           onFileOpen={onFileOpen}
+          onFavoriteRemove={removeFavorite}
         />
       )}
 
