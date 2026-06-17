@@ -9,7 +9,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "은밀하게 위대하게",
+  title: "VSCode-Secretly-Greatly",
   description: "IDE style market monitoring dashboard",
 };
 
