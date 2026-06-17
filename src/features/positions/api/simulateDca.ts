@@ -1,33 +1,29 @@
-import { simulateDcaLocal } from "../model/simulateDcaLocal";
-import type { DcaSimulateRequest, DcaSimulateResult } from "../model/types";
+import { customInstance } from "@/shared/api";
+import type {
+  DcaSimulateRequest,
+  DcaSimulateResult,
+  ResponseEnvelope,
+} from "../model/types";
 
-/** BE 엔드포인트 (배포 후 연동). */
-export const DCA_SIMULATE_ENDPOINT = "/api/indicators";
+/** BE 엔드포인트 — apiClient baseURL "/api" 와 합쳐져 POST /api/indicators 로 요청. */
+export const DCA_SIMULATE_ENDPOINT = "/indicators";
 
 /**
- * 가상 추가매수(물타기) 시뮬레이션 — BE 평단가 보정 엔진 호출.
+ * 가상 추가매수(물타기) 시뮬레이션 — BE 평단가 보정 엔진(POST /api/indicators) 호출.
  *
- * 현재 BE 미배포라 로컬에서 동일 계약(7대 지표 + formattedLog)으로 모킹한다.
- * 배포 후 함수 내부만 아래로 교체하면 호출부(UI)는 그대로 둔다:
+ * 응답 봉투(ResponseEnvelope)에서 data(7대 지표 + formattedLog)만 추출해 반환한다.
+ * 현재가는 서버 시세로 채워지므로 요청 바디(DcaSimulateRequest)에는 포함하지 않는다.
  *
- * ```ts
- * import { customInstance } from "@/shared/api";
- * import type { ResponseEnvelope } from "../model/types";
- * const res = await customInstance<ResponseEnvelope<DcaSimulateResult>>({
- *   url: DCA_SIMULATE_ENDPOINT,
- *   method: "POST",
- *   data: request,
- * });
- * return res.data;
- * ```
- *
- * @param marketPrice 로컬 목 전용(현재가). 실제 BE 연동 시 불필요.
+ * 인증 필수(bearer) — 미로그인/만료 시 401, 해당 종목 보유 자산이 없으면 404가 내려온다.
+ * 두 경우 모두 apiClient 인터셉터가 BE 메시지를 실은 에러로 reject 하므로 호출부에서 처리한다.
  */
 export async function simulateDca(
   request: DcaSimulateRequest,
-  marketPrice: number,
 ): Promise<DcaSimulateResult> {
-  // 연산 엔진 구동 연출 + 비동기 흐름 검증용 지연 (BE 연동 시 제거)
-  await new Promise((resolve) => setTimeout(resolve, 220));
-  return simulateDcaLocal(request, marketPrice);
+  const res = await customInstance<ResponseEnvelope<DcaSimulateResult>>({
+    url: DCA_SIMULATE_ENDPOINT,
+    method: "POST",
+    data: request,
+  });
+  return res.data;
 }
