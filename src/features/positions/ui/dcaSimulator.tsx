@@ -13,7 +13,6 @@
 import { useCallback, useState } from "react";
 import { Codicon } from "@/shared/ui";
 import { simulateDca } from "../api/simulateDca";
-import { simulateDcaLocal } from "../model/simulateDcaLocal";
 import type { DcaSimulateRequest } from "../model/types";
 
 interface DcaSimulatorProps {
@@ -27,17 +26,39 @@ interface DcaSimulatorProps {
 
 const DEFAULT_ADD_QUANTITY = 1;
 
+/** 결과가 아직 없을 때(패널 첫 진입) 노출하는 안내 문구. 서버 호출과 무관. */
+const EMPTY_HINT =
+  "[Optimizer Info] 추가 매수가·수량을 입력한 뒤 [물타기 계산]을 눌러주세요.";
+
 const inputClass =
   "h-7 w-full rounded-(--radius-xs) border border-(--vscode-input-border) bg-(--vscode-input-background) px-2 text-right font-mono text-(length:--font-size-md) text-(--vscode-input-foreground) outline-none focus:border-(--vscode-focus)";
 
-function LogLine({ text }: { text: string }) {
+interface LogEntry {
+  text: string;
+  /** 401/404 등 BE 에러 줄 — 빨간색으로 표시. */
+  isError?: boolean;
+}
+
+function LogLine({ text, isError }: LogEntry) {
   const idx = text.indexOf("] ");
   const tag = idx >= 0 ? text.slice(0, idx + 1) : "";
   const body = idx >= 0 ? text.slice(idx + 2) : text;
   return (
     <div className="flex gap-2">
-      {tag && <span className="shrink-0 text-terminal-cyan">{tag}</span>}
-      <span className="text-vscode-fg-editor">{body}</span>
+      {tag && (
+        <span
+          className={`shrink-0 ${isError ? "text-(--vscode-errorForeground)" : "text-terminal-cyan"}`}
+        >
+          {tag}
+        </span>
+      )}
+      <span
+        className={
+          isError ? "text-(--vscode-errorForeground)" : "text-vscode-fg-editor"
+        }
+      >
+        {body}
+      </span>
     </div>
   );
 }
@@ -63,26 +84,28 @@ export function DcaSimulator({
     [code, currentAvgPrice, currentQuantity],
   );
 
-  // 초기 1줄은 로컬로 즉시 채워 패널이 비어 보이지 않게 한다.
-  const [logs, setLogs] = useState<string[]>(() => [
-    simulateDcaLocal(
-      buildRequest(currentPrice, DEFAULT_ADD_QUANTITY),
-      currentPrice,
-    ).formattedLog,
-  ]);
+  // 결과는 [물타기 계산] 클릭 시에만 채운다. 비어 있을 땐 안내 문구만 노출.
+  const [logs, setLogs] = useState<LogEntry[]>([]);
 
   const run = useCallback(async () => {
     setPending(true);
     try {
-      const result = await simulateDca(
-        buildRequest(addPrice, addQuantity),
-        currentPrice,
-      );
-      setLogs((prev) => [...prev, result.formattedLog]);
+      const result = await simulateDca(buildRequest(addPrice, addQuantity));
+      setLogs((prev) => [...prev, { text: result.formattedLog }]);
+    } catch (err) {
+      // apiClient 인터셉터가 BE 메시지를 error.message 로 실어준다.
+      // 401(인증 필요)·404(보유 자산 없음) 등을 그대로 로그 패널에 노출한다.
+      const message =
+        (err as { message?: string })?.message ??
+        "시뮬레이션 요청에 실패했습니다. 잠시 후 다시 시도해주세요.";
+      setLogs((prev) => [
+        ...prev,
+        { text: `[Optimizer Error] ${message}`, isError: true },
+      ]);
     } finally {
       setPending(false);
     }
-  }, [buildRequest, addPrice, addQuantity, currentPrice]);
+  }, [buildRequest, addPrice, addQuantity]);
 
   const toNumber = (value: number) => (Number.isFinite(value) ? value : 0);
 
@@ -149,8 +172,9 @@ export function DcaSimulator({
 
       {/* 옵티마이저 로그 (BE formattedLog 누적) */}
       <div className="rounded-(--radius-sm) border border-vscode-border-panel bg-vscode-window p-4 font-mono text-(length:--font-size-md) leading-[22px]">
+        {logs.length === 0 && !pending && <LogLine text={EMPTY_HINT} />}
         {logs.map((line, i) => (
-          <LogLine key={i} text={line} />
+          <LogLine key={i} text={line.text} isError={line.isError} />
         ))}
         {pending && (
           <div className="flex gap-2 opacity-70">
