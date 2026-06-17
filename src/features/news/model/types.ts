@@ -8,21 +8,19 @@ export type NewsTag =
 
 /** GET /api/news 타임라인의 개별 뉴스 항목. */
 export interface NewsItem {
-  newsId: number;
-  tag: NewsTag;
+  id: number;
+  /** 기사 제목 */
+  title: string;
+  /** 뉴스 성격 태그 (분류 실패 시 null) */
+  tag: NewsTag | null;
   /** 출처 언론사 */
-  publisher: string;
-  /** 연동 종목 티커 (없으면 null) */
-  ticker: string | null;
-  /** 연동 종목 현재가 (없으면 null) */
-  tickerPrice: number | null;
+  source: string;
   /** AI 한 줄 요약 */
-  aiOneLineSummary: string;
-  /** 에디터에 소스 주석처럼 렌더되는 위장 코멘트 */
-  formattedComment: string;
-  /** [차트 보기] 활성화 가이드 플래그 */
-  hasStockChart: boolean;
-  createdAt: string;
+  summary: string;
+  /** 원문 기사 링크 */
+  link: string;
+  /** 발행 시각(ISO) */
+  pub_date: string;
 }
 
 /** GET /api/news 응답 본문. */

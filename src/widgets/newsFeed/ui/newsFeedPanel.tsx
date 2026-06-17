@@ -25,41 +25,38 @@ function formatTime(iso: string): string {
 }
 
 function NewsRow({ item }: { item: NewsItem }) {
-  const meta = TAG_META[item.tag];
+  const meta = item.tag ? TAG_META[item.tag] : null;
   return (
     <article className="overflow-hidden border-b border-vscode-border-widget bg-vscode-editor px-5 py-3 hover:bg-vscode-list-hover">
       <div className="flex h-[21px] items-center gap-[8px] pb-[5px]">
-        <span
-          className={`h-[14px] rounded-[3px] bg-[rgba(255,255,255,0.06)] px-[7px] text-[10px] font-semibold leading-[14px] ${meta.color}`}
-        >
-          {meta.label}
-        </span>
+        {meta && (
+          <span
+            className={`h-[14px] rounded-[3px] bg-[rgba(255,255,255,0.06)] px-[7px] text-[10px] font-semibold leading-[14px] ${meta.color}`}
+          >
+            {meta.label}
+          </span>
+        )}
         <span className="text-[12px] leading-4 text-vscode-fg">
-          {item.publisher}
+          {item.source}
         </span>
         <span className="text-[12px] leading-4 text-(--vscode-disabledForeground)">
           ·
         </span>
         <span className="font-mono text-[12px] leading-4 text-vscode-fg-desc">
-          {formatTime(item.createdAt)}
+          {formatTime(item.pub_date)}
         </span>
-        {item.ticker && (
-          <span className="ml-auto flex items-center gap-1 font-mono text-[11px] text-(--syntax-type)">
-            {item.hasStockChart && (
-              <Codicon icon="codicon-graph-line" size={11} />
-            )}
-            {item.ticker}
-            {item.tickerPrice != null && (
-              <span className="text-vscode-fg-desc">
-                {item.tickerPrice.toLocaleString()}
-              </span>
-            )}
-          </span>
-        )}
       </div>
 
       <h2 className="truncate text-[14px] leading-5 text-vscode-fg">
-        {item.aiOneLineSummary}
+        <a
+          href={item.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline"
+          title={item.title}
+        >
+          {item.title}
+        </a>
       </h2>
 
       <div className="flex h-[24px] items-start gap-[8px] pt-[5px]">
@@ -67,7 +64,7 @@ function NewsRow({ item }: { item: NewsItem }) {
           SUMMARY
         </span>
         <p className="min-w-0 flex-1 truncate font-mono text-[12px] leading-4.75 text-vscode-fg-desc">
-          {item.formattedComment}
+          {item.summary}
         </p>
       </div>
     </article>
@@ -132,7 +129,7 @@ export function NewsFeedPanel() {
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
           {visible.map((item) => (
-            <NewsRow key={item.newsId} item={item} />
+            <NewsRow key={item.id} item={item} />
           ))}
         </div>
       )}
