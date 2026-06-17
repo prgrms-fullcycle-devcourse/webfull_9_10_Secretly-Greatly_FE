@@ -20,11 +20,14 @@ interface DcaSimulatorProps {
   code: string;
   currentAvgPrice: number;
   currentQuantity: number;
-  /** 현재가 (목 전용 — BE 연동 시 서버가 시세를 채움) */
+  /** 현재가 — 추가 매수가 입력 기본값 및 "현재가" 버튼에 사용. */
   currentPrice: number;
 }
 
 const DEFAULT_ADD_QUANTITY = 1;
+
+/** 빈 입력(NaN)을 0으로 정규화. */
+const toNumber = (value: number) => (Number.isFinite(value) ? value : 0);
 
 /** 결과가 아직 없을 때(패널 첫 진입) 노출하는 안내 문구. 서버 호출과 무관. */
 const EMPTY_HINT =
@@ -39,7 +42,7 @@ interface LogEntry {
   isError?: boolean;
 }
 
-function LogLine({ text, isError }: LogEntry) {
+function LogLine({ text, isError }: { text: string; isError?: boolean }) {
   const idx = text.indexOf("] ");
   const tag = idx >= 0 ? text.slice(0, idx + 1) : "";
   const body = idx >= 0 ? text.slice(idx + 2) : text;
@@ -88,6 +91,17 @@ export function DcaSimulator({
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
   const run = useCallback(async () => {
+    // 음수·0은 BE가 400으로 거절하므로 불필요한 요청 전에 클라이언트에서 차단.
+    if (addPrice <= 0 || addQuantity <= 0) {
+      setLogs((prev) => [
+        ...prev,
+        {
+          text: "[Optimizer Error] 추가 매수가와 수량은 0보다 커야 합니다.",
+          isError: true,
+        },
+      ]);
+      return;
+    }
     setPending(true);
     try {
       const result = await simulateDca(buildRequest(addPrice, addQuantity));
@@ -106,8 +120,6 @@ export function DcaSimulator({
       setPending(false);
     }
   }, [buildRequest, addPrice, addQuantity]);
-
-  const toNumber = (value: number) => (Number.isFinite(value) ? value : 0);
 
   return (
     <div className="flex flex-col gap-4 border-t border-vscode-border-panel bg-vscode-editor px-6 py-4 font-sans">
@@ -132,6 +144,7 @@ export function DcaSimulator({
             <input
               type="number"
               inputMode="numeric"
+              min={0}
               value={Number.isFinite(addPrice) ? addPrice : ""}
               onChange={(e) => setAddPrice(toNumber(e.target.valueAsNumber))}
               className={`${inputClass} w-32`}
@@ -153,6 +166,7 @@ export function DcaSimulator({
           <input
             type="number"
             inputMode="numeric"
+            min={0}
             value={Number.isFinite(addQuantity) ? addQuantity : ""}
             onChange={(e) => setAddQuantity(toNumber(e.target.valueAsNumber))}
             className={`${inputClass} w-24`}
@@ -171,7 +185,7 @@ export function DcaSimulator({
       </div>
 
       {/* 옵티마이저 로그 (BE formattedLog 누적) */}
-      <div className="rounded-(--radius-sm) border border-vscode-border-panel bg-vscode-window p-4 font-mono text-(length:--font-size-md) leading-[22px]">
+      <div className="max-h-48 overflow-y-auto rounded-(--radius-sm) border border-vscode-border-panel bg-vscode-window p-4 font-mono text-(length:--font-size-md) leading-[22px]">
         {logs.length === 0 && !pending && <LogLine text={EMPTY_HINT} />}
         {logs.map((line, i) => (
           <LogLine key={i} text={line.text} isError={line.isError} />
