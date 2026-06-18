@@ -11,6 +11,7 @@
  */
 
 import { usePositionsStore } from "@/entities/position";
+import { useFxStore } from "@/features/currency";
 import { getPortfolioSummary } from "../model/metrics";
 import {
   formatAmount,
@@ -45,7 +46,8 @@ function SummaryItem({
 
 export function PositionsPanel() {
   const positions = usePositionsStore((state) => state.positions);
-  const summary = getPortfolioSummary(positions);
+  const usdKrw = useFxStore((state) => state.usdKrw);
+  const summary = getPortfolioSummary(positions, usdKrw);
 
   return (
     <div className="flex h-full flex-col overflow-auto font-sans text-vscode-fg">
@@ -100,9 +102,12 @@ export function PositionsPanel() {
 
       {/* 면책 */}
       <p className="px-6 py-4 text-(length:--font-size-sm) text-vscode-fg-desc">
-        행의 ▸를 펼치면 물타기(추가 매수) 시뮬레이션을 할 수 있습니다. 모든
-        결과는 단순 산술 계산이며 투자 조언이 아닙니다. 미국 종목은 합계에서
-        환율 1,368원으로 환산했습니다.
+        행의 ▸를 펼치면 물타기(추가 매수) 시뮬레이션을 할 수 있습니다.
+        <br />
+        모든 결과는 단순 산술 계산이며 투자 조언이 아닙니다.
+        <br />
+        미국 종목은 합계에서 환율 {Math.round(usdKrw).toLocaleString("ko-KR")}
+        원으로 환산했습니다.
       </p>
     </div>
   );
