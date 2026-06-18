@@ -8,12 +8,12 @@ export interface StockItem {
   price: number | null;
   change: number | null;
   volume: number | null;
-  market: "DOMESTIC" | "OVERSEAS" | "COIN";
+  market: "DOMESTIC" | "OVERSEAS";
 }
 
 export interface GetStocksParams {
   keyword?: string;
-  market?: "DOMESTIC" | "OVERSEAS" | "COIN";
+  market?: "DOMESTIC" | "OVERSEAS";
   sort?: "change" | "price" | "volume";
   order?: "asc" | "desc";
 }

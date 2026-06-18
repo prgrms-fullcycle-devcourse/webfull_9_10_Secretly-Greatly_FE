@@ -61,11 +61,6 @@ export const RECENT_FILES: RecentFile[] = [
     path: "Secretly_Greatly\\src\\stocks",
   },
   {
-    filename: "COIN.sheet",
-    name: "COIN.sheet",
-    path: "Secretly_Greatly\\src\\stocks",
-  },
-  {
     filename: "PRD-vscode-design-system.md",
     name: "PRD-vscode-design-system.md",
     path: "Secretly_Greatly",

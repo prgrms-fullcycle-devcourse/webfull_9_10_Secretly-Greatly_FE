@@ -61,6 +61,11 @@ interface PriceChartProps {
   movingAverages?: number[];
   /** 하단 거래량 패널 표시 */
   showVolume?: boolean;
+  /**
+   * 전체보기(fitContent) 갱신 키 — 이 값이 바뀔 때만 뷰를 데이터 전체에 맞춘다.
+   * 같은 키로 data 만 갱신되면(폴링) 줌/이동을 보존. 미지정 시 매번 맞춤(스파크라인용).
+   */
+  fitKey?: string;
   /** 크로스헤어가 가리키는 값 (마우스가 차트 밖이면 null). */
   onHover?: (hover: ChartHover | null) => void;
   className?: string;
@@ -92,6 +97,9 @@ function chartOptions(
   variant: "full" | "sparkline",
 ): DeepPartial<TimeChartOptions> {
   const border = cssVar("--vscode-panel-border", "#2a2b2c");
+  // 큰 차트(full)만 줌·이동 허용 — 스크롤 줌 / 드래그 이동 / 핀치 줌.
+  // 스파크라인(미니)은 정적 미리보기라 상호작용 비활성.
+  const interactive = variant === "full";
   const base: DeepPartial<TimeChartOptions> = {
     autoSize: true,
     layout: {
@@ -102,8 +110,8 @@ function chartOptions(
       fontFamily: cssVar("--font-editor", "monospace"),
       fontSize: 11,
     },
-    handleScale: false,
-    handleScroll: false,
+    handleScale: interactive,
+    handleScroll: interactive,
   };
 
   if (variant === "sparkline") {
@@ -141,6 +149,7 @@ export function PriceChart({
   variant = "full",
   movingAverages,
   showVolume = false,
+  fitKey,
   onHover,
   className,
 }: PriceChartProps) {
@@ -148,6 +157,8 @@ export function PriceChart({
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<SeriesType>[]>([]);
   const mainSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
+  // 마지막으로 전체보기(fitContent)를 맞춘 fitKey. 같은 키면 폴링 갱신 때 뷰 보존.
+  const lastFitKeyRef = useRef<string | undefined>(undefined);
   // 콜백을 ref로 보관 → 구독은 마운트 시 1회만, 항상 최신 콜백 호출
   const onHoverRef = useRef(onHover);
   useEffect(() => {
@@ -161,6 +172,8 @@ export function PriceChart({
 
     const chart = createChart(container, chartOptions(variant));
     chartRef.current = chart;
+    // 새 차트 → 다음 데이터 적용 때 한 번 전체보기.
+    lastFitKeyRef.current = undefined;
 
     // 크로스헤어(마우스) 위치의 값을 콜백으로 전달
     const handleMove = (param: MouseEventParams<Time>) => {
@@ -299,8 +312,13 @@ export function PriceChart({
 
     seriesRef.current = created;
     mainSeriesRef.current = created[0] ?? null;
-    chart.timeScale().fitContent();
-  }, [data, up, type, variant, movingAverages, showVolume]);
+    // 새 view(fitKey 변경)나 스파크라인(fitKey 미지정)일 때만 전체보기.
+    // 같은 fitKey 로 폴링 갱신될 땐 사용자가 맞춰둔 줌/이동을 유지한다.
+    if (fitKey === undefined || lastFitKeyRef.current !== fitKey) {
+      chart.timeScale().fitContent();
+      lastFitKeyRef.current = fitKey;
+    }
+  }, [data, up, type, variant, movingAverages, showVolume, fitKey]);
 
   return <div ref={containerRef} className={className} />;
 }
