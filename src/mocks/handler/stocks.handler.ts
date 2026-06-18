@@ -29,15 +29,6 @@ const mockStocks = [
     market: "OVERSEAS",
   },
   {
-    stockId: 4,
-    code: "BTC",
-    name: "Bitcoin",
-    price: 92450000,
-    change: -1.25,
-    volume: 3800,
-    market: "COIN",
-  },
-  {
     stockId: 5,
     code: "035420",
     name: "NAVER",

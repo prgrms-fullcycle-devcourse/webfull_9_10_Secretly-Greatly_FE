@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { Codicon, FileIcon, IconButton } from "@/shared/ui";
 import { createPosition, usePositionsStore } from "@/entities/position";
 import { useFavoritesStore } from "@/features/favorites";
+import { useWatchlistStore } from "@/features/watchlist";
 import { getStocks } from "@/features/stocks";
+import { getStoredSession } from "@/shared/api";
 
 interface SearchOptions {
   caseSensitive: boolean;
@@ -16,7 +18,7 @@ interface StockResult {
   id: string;
   name: string;
   code: string;
-  market: "DOMESTIC" | "OVERSEAS" | "COIN";
+  market: "DOMESTIC" | "OVERSEAS";
   /** 현재가 (미적재 시 null) — 보유 목록 추가 시 currentPrice 로 사용 (화면 표시 X). */
   price: number | null;
 }
@@ -107,6 +109,7 @@ function ResultItem({
   added,
   bookmarked,
   starred,
+  canFavorite,
   onToggleAdded,
   onToggleBookmark,
   onToggleStar,
@@ -116,6 +119,8 @@ function ResultItem({
   added: boolean;
   bookmarked: boolean;
   starred: boolean;
+  /** 즐겨찾기(★) 쓰기 가능 여부 (비로그인은 false). 보유추가(+)는 로그인 무관. */
+  canFavorite: boolean;
   onToggleAdded: () => void;
   onToggleBookmark: () => void;
   onToggleStar: () => void;
@@ -136,6 +141,7 @@ function ResultItem({
           className="flex shrink-0 items-start"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* 보유추가(+)는 로그인 무관(물타기 계산기), 즐겨찾기(★)는 로그인 사용자만. */}
           <IconButton
             variant="search"
             label={added ? "관심종목 추가됨" : "관심종목 추가"}
@@ -149,15 +155,17 @@ function ResultItem({
                 : undefined
             }
           />
-          <IconButton
-            variant="search"
-            label={starred ? "즐겨찾기 해제" : "즐겨찾기 추가"}
-            pressed={starred}
-            onClick={onToggleStar}
-            icon="codicon-star-empty"
-            iconSize={13}
-            iconClassName={starred ? "text-yellow-400" : undefined}
-          />
+          {canFavorite && (
+            <IconButton
+              variant="search"
+              label={starred ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+              pressed={starred}
+              onClick={onToggleStar}
+              icon="codicon-star-empty"
+              iconSize={13}
+              iconClassName={starred ? "text-yellow-400" : undefined}
+            />
+          )}
           <IconButton
             variant="search"
             label={bookmarked ? "북마크 해제" : "북마크 추가"}
@@ -188,16 +196,22 @@ export function SearchView() {
     wholeWord: false,
     useRegex: false,
   });
-  const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
   const [results, setResults] = useState<StockResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(false);
+  // 보유추가·즐겨찾기 쓰기는 로그인 사용자만 (검색 자체는 비로그인도 가능).
+  const [isGuest] = useState(() => getStoredSession() == null);
 
-  // 즐겨찾기 공유 스토어 — ★ 버튼이 watchlist 트리·시트와 동기화.
+  // 즐겨찾기 공유 스토어 — ★ 버튼이 즐겨찾기 트리·시트와 동기화.
   const favoriteItems = useFavoritesStore((s) => s.items);
   const toggleFavorite = useFavoritesStore((s) => s.toggle);
   const isFavorite = (code: string) =>
     favoriteItems.some((f) => f.code === code);
+
+  // 관심목록(시세 리스트) 스토어 — 🔖 북마크가 시세 리스트에 종목을 가감한다.
+  const watchlist = useWatchlistStore((s) => s.items);
+  const toggleWatchlist = useWatchlistStore((s) => s.toggle);
+  const isWatched = (code: string) => watchlist.some((w) => w.code === code);
 
   // 보유 종목 공유 스토어 — + 버튼이 물타기 패널 목록에 추가/제거.
   const positions = usePositionsStore((state) => state.positions);
@@ -223,14 +237,22 @@ export function SearchView() {
           .then((items) => {
             if (ignore) return;
             setError(false);
+            // 시작일치(prefix)만 — "A" 검색 시 A로 시작하는 것만. BE 는 부분일치라 FE 에서 좁힌다.
+            const kw = keyword.toLowerCase();
             setResults(
-              items.map((s) => ({
-                id: s.code,
-                name: s.name,
-                code: s.code,
-                market: s.market,
-                price: s.price,
-              })),
+              items
+                .filter(
+                  (s) =>
+                    s.name.toLowerCase().startsWith(kw) ||
+                    s.code.toLowerCase().startsWith(kw),
+                )
+                .map((s) => ({
+                  id: s.code,
+                  name: s.name,
+                  code: s.code,
+                  market: s.market,
+                  price: s.price,
+                })),
             );
           })
           .catch(() => {
@@ -260,18 +282,6 @@ export function SearchView() {
     } else {
       addPosition(createPosition(stock));
     }
-  };
-
-  const toggleBookmark = (id: string) => {
-    setBookmarked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
   };
 
   return (
@@ -460,10 +470,17 @@ export function SearchView() {
                   stock={stock}
                   query={query}
                   added={positions.some((p) => p.id === stock.code)}
-                  bookmarked={bookmarked.has(stock.id)}
+                  bookmarked={isWatched(stock.code)}
                   starred={isFavorite(stock.code)}
+                  canFavorite={!isGuest}
                   onToggleAdded={() => toggleAdded(stock)}
-                  onToggleBookmark={() => toggleBookmark(stock.id)}
+                  onToggleBookmark={() =>
+                    toggleWatchlist({
+                      code: stock.code,
+                      name: stock.name,
+                      market: stock.market,
+                    })
+                  }
                   onToggleStar={() =>
                     toggleFavorite({
                       code: stock.code,

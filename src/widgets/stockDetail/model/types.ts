@@ -9,5 +9,5 @@ export interface StockSummary {
   change: string;
   /** 거래량 (예: "21.15M") */
   volume: string;
-  market: "DOMESTIC" | "OVERSEAS" | "COIN";
+  market: "DOMESTIC" | "OVERSEAS";
 }

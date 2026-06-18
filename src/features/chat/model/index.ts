@@ -3,8 +3,10 @@ export type {
   UseChatSocketOptions,
   UseChatSocketResult,
 } from "./useChatSocket";
+export { ChatProvider, useChatContext } from "./chatContext";
 export {
   GLOBAL_CHAT_ROOM,
+  GLOBAL_CHAT_LABEL,
   CHAT_SOCKET_EVENT,
   CHAT_SEND_COOLDOWN_MS,
   CHAT_BLIND_THRESHOLD,

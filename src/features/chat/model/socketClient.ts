@@ -3,13 +3,19 @@ import { io, type Socket } from "socket.io-client";
 /**
  * 채팅 소켓 베이스 URL.
  *
- * REST(apiClient)는 "/api" 프리픽스를 쓰지만, Socket.IO 게이트웨이는
- * 별도 네임스페이스 없이 오리진에 직접 붙으므로 환경변수에서 "/api" 를 떼어낸
- * 호스트로 연결한다.
+ * Socket.IO 는 REST 와 달리 프록시로 중계할 수 없고 브라우저가 게이트웨이
+ * 오리진에 직접 붙는다(HTTPS 페이지면 wss 필수). 환경변수는 NEXT_PUBLIC_API_URL
+ * 하나로 통일하고, REST 용 "/api" 프리픽스를 떼어 소켓 오리진으로 쓴다.
+ *
+ *   예) https://secretlygreatly.duckdns.org/api → https://secretlygreatly.duckdns.org
+ *       http://localhost:3000/api              → http://localhost:3000
+ *
+ * 절대 URL 이 아니면(미설정/상대경로) 로컬 개발용 http://localhost:3000 로 폴백한다.
  */
 export function resolveChatSocketURL(): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, "");
-  return base || "http://localhost:3000";
+  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, "").trim();
+  if (base && /^https?:\/\//.test(base)) return base;
+  return "http://localhost:3000";
 }
 
 /**

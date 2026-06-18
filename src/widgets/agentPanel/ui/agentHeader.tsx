@@ -44,7 +44,7 @@ export function AgentHeader({
   };
 
   const handleSettingsClick = () => {
-    window.dispatchEvent(new CustomEvent("open-panic-settings"));
+    window.dispatchEvent(new CustomEvent("open-settings"));
     showToast("Settings panel opened");
   };
 

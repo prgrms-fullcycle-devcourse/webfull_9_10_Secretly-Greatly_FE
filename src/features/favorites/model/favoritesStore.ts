@@ -4,7 +4,7 @@ import { create } from "zustand";
 export interface FavoriteStock {
   code: string;
   name: string;
-  market: "DOMESTIC" | "OVERSEAS" | "COIN";
+  market: "DOMESTIC" | "OVERSEAS";
 }
 
 const STORAGE_KEY = "secret.favorites";
@@ -29,6 +29,8 @@ interface FavoritesState {
   items: FavoriteStock[];
   /** 마운트 후 localStorage 복원 (초기값은 비워 SSR 하이드레이션 일치). */
   hydrate: () => void;
+  /** 화면에서만 비움 (로그아웃용) — localStorage 는 보존해 재로그인 시 복원된다. */
+  reset: () => void;
   isFavorite: (code: string) => boolean;
   /** 있으면 제거, 없으면 추가 (localStorage 동기화). */
   toggle: (stock: FavoriteStock) => void;
@@ -41,6 +43,7 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
     const stored = readStored();
     if (stored) set({ items: stored });
   },
+  reset: () => set({ items: [] }),
   isFavorite: (code) => get().items.some((s) => s.code === code),
   toggle: (stock) => {
     const exists = get().items.some((s) => s.code === stock.code);

@@ -1,17 +1,33 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Codicon } from "@/shared/ui";
 import {
   changeColorClass,
   compact,
-  formatByMarket,
-  isUp,
+  compactKo,
+  convertCurrency,
+  formatPrice,
+  nativeCurrency,
   parseVolume,
+  type DisplayCurrency,
 } from "@/shared/lib";
+import {
+  CurrencyToggle,
+  useCurrencyStore,
+  useFxStore,
+} from "@/features/currency";
+import { useTimeframeStore, type Timeframe } from "@/features/timeframe";
 import { createPosition, usePositionsStore } from "@/entities/position";
+import {
+  getCandles,
+  getMarketQuotes,
+  toYahooSymbol,
+  type Candle,
+  type MarketQuote,
+} from "@/features/stocks";
 import type { StockSummary } from "../model/types";
-import { buildChartData } from "../model/chartData";
+import { buildChartData, candlesToChartData } from "../model/chartData";
 import { PriceChart } from "./priceChart";
 
 interface StockDetailPanelProps {
@@ -20,49 +36,83 @@ interface StockDetailPanelProps {
   onOpenBigChart?: (stock: StockSummary) => void;
 }
 
+/** 상세 시세 자동 갱신 주기 (ms) — 리스트와 같은 주기. */
+const REFRESH_MS = 5_000;
+
 const MARKET_LABEL: Record<StockSummary["market"], string> = {
   DOMESTIC: "KOREA MARKET",
   OVERSEAS: "US MARKET",
-  COIN: "CRYPTO MARKET",
 };
 
-/** 시가총액은 가격×유통주식수라 파생 불가 → 종목별 목업값. */
-const MARKET_CAP: Record<string, string> = {
-  "005930": "444.20T",
-  "000660": "137.10T",
-  "035720": "23.40T",
-  "373220": "113.05T",
-  AAPL: "2.95T",
-  NVDA: "2.34T",
-  TSLA: "558.00B",
-  BTC: "1.84P",
-};
+function nowTime(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
 
-/** 종목 요약 → 상세 지표 (open/high/low/value 등은 현재가·등락률에서 파생). */
-function buildMetrics(stock: StockSummary) {
-  const price = Number.parseFloat(stock.price) || 0;
-  const pct = Number.parseFloat(stock.change) || 0;
-  const prevClose = price / (1 + pct / 100);
-  const changeAbs = price - prevClose;
-  const open = prevClose;
-  const high = Math.max(open, price) * 1.0056;
-  const low = Math.min(open, price) * 0.9981;
-  const tradedValue = price * parseVolume(stock.volume);
+/** 분봉 토글 → 그 기간의 등락률(%). 일간은 스냅샷 폴백 허용, 그 외는 라이브 quote 만. 없으면 null. */
+function pctForTimeframe(
+  quote: MarketQuote | null,
+  snapPct: number,
+  timeframe: Timeframe,
+): number | null {
+  switch (timeframe) {
+    case "일간":
+      return quote?.changePercent ?? snapPct;
+    case "15분":
+      return quote?.change15m ?? null;
+    case "30분":
+      return quote?.change30m ?? null;
+  }
+}
 
-  const num = (v: number) => formatByMarket(v, stock.market);
-  const signed = (v: number) => `${v >= 0 ? "+" : ""}${num(v)}`;
+/**
+ * 상세 지표. 등락률(change·changeRate)은 분봉 토글 기간 기준 — 리스트와 같은 값을 본다.
+ * 기본 "일간"=전일 종가 대비(표준). 라이브 quote 없으면 일간만 스냅샷 폴백(그 외 기간은 "—").
+ */
+function buildMetrics(
+  stock: StockSummary,
+  quote: MarketQuote | null,
+  timestamp: string,
+  currency: DisplayCurrency,
+  rate: number,
+  timeframe: Timeframe,
+) {
+  const snapPrice = Number.parseFloat(stock.price) || 0;
+  const snapPct = Number.parseFloat(stock.change) || 0;
+
+  const price = quote?.price ?? snapPrice;
+  const pct = pctForTimeframe(quote, snapPct, timeframe);
+  const volume = quote?.volume ?? parseVolume(stock.volume);
+  const tradedValue = price * volume;
+
+  // 거래대금 — 달러는 영어식 접두($..B), 원화는 한국식 접미(..조원). 거래량(주식 수)은 항상 한국식.
+  const native = nativeCurrency(stock.market);
+  const valueNum = convertCurrency(tradedValue, native, currency, rate);
+  const value =
+    currency === "USD" ? `$${compact(valueNum)}` : `${compactKo(valueNum)}원`;
+
+  // 변동액: 일간은 전일종가(있으면) 기준, 그 외 기간은 등락률로 역산. pct 없으면 "—".
+  const DASH = "—";
+  let change = DASH;
+  let changeRate = DASH;
+  if (pct != null) {
+    const prevRef =
+      timeframe === "일간"
+        ? (quote?.previousClose ?? price / (1 + pct / 100))
+        : price / (1 + pct / 100);
+    const changeAbs = price - prevRef;
+    change = `${changeAbs >= 0 ? "+" : "-"}${formatPrice(Math.abs(changeAbs), stock.market, currency, rate)}`;
+    changeRate = `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
+  }
 
   return {
-    current: num(price),
-    change: signed(changeAbs),
-    changeRate: stock.change,
-    open: num(open),
-    high: num(high),
-    low: num(low),
-    volume: stock.volume,
-    value: compact(tradedValue),
-    marketCap: MARKET_CAP[stock.code] ?? "—",
-    timestamp: "09:31:05",
+    current: formatPrice(price, stock.market, currency, rate),
+    change,
+    changeRate,
+    volume: compactKo(volume),
+    value,
+    timestamp,
   };
 }
 
@@ -102,15 +152,58 @@ export function StockDetailPanel({
 }: StockDetailPanelProps) {
   const positions = usePositionsStore((s) => s.positions);
   const addPosition = usePositionsStore((s) => s.addPosition);
+  const currency = useCurrencyStore((s) => s.currency);
+  const usdKrw = useFxStore((s) => s.usdKrw);
+  const timeframe = useTimeframeStore((s) => s.timeframe);
 
-  const metrics = buildMetrics(stock);
-  const up = isUp(stock.change);
+  const [quote, setQuote] = useState<MarketQuote | null>(null);
+  const [candles, setCandles] = useState<Candle[] | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string>(() => nowTime());
+
+  const symbol = toYahooSymbol(stock.code, stock.market);
+
+  // 라이브 시세 + 당일 1분봉 폴링 (종목 변경 시 재시작). effect 본문 동기 setState 없음(lint).
+  useEffect(() => {
+    let ignore = false;
+    const tick = () => {
+      Promise.all([getMarketQuotes([symbol]), getCandles(symbol, "1m")])
+        .then(([quotes, cs]) => {
+          if (ignore) return;
+          setQuote(quotes[0] ?? null);
+          if (cs.length) setCandles(cs);
+          setUpdatedAt(nowTime());
+        })
+        .catch(() => {});
+    };
+    tick();
+    const timer = window.setInterval(tick, REFRESH_MS);
+    return () => {
+      ignore = true;
+      window.clearInterval(timer);
+    };
+  }, [symbol]);
+
+  const pct = (quote?.changePercent ?? Number.parseFloat(stock.change)) || 0;
+  const up = pct >= 0;
+  const metrics = buildMetrics(
+    stock,
+    quote,
+    updatedAt,
+    currency,
+    usdKrw,
+    timeframe,
+  );
   const added = positions.some((p) => p.id === stock.code);
-  // 미니 스파크라인은 기간 전환 없이 고정 — 상세 기간/지표는 확장 차트에서.
-  const chartData = useMemo(
+
+  const fallbackChart = useMemo(
     () =>
       buildChartData(stock.code, Number.parseFloat(stock.price) || 0, up, "1D"),
     [stock.code, stock.price, up],
+  );
+  const chartData = useMemo(
+    () =>
+      candles && candles.length ? candlesToChartData(candles) : fallbackChart,
+    [candles, fallbackChart],
   );
 
   const handleAdd = () => {
@@ -127,7 +220,7 @@ export function StockDetailPanel({
           <span>{stock.code}</span>
           <button
             type="button"
-            className="tab-close ml-1 opacity-100"
+            className="ml-1 flex cursor-pointer items-center rounded-xs text-vscode-fg-icon hover:bg-vscode-list-hover hover:text-vscode-fg"
             aria-label={`Close ${stock.code}`}
             onClick={onClose}
           >
@@ -150,36 +243,32 @@ export function StockDetailPanel({
       </nav>
 
       <div className="flex-1 overflow-auto px-4 py-3">
-        {/* 타이틀 */}
-        <h2 className="font-sans text-[20px] font-semibold leading-tight text-vscode-fg">
-          {stock.name}{" "}
-          <span className="text-[14px] font-normal text-vscode-fg-desc">
-            ({stock.code})
-          </span>
-        </h2>
+        {/* 타이틀 + 통화 토글 ($/원, 글로벌). 패널이 좁아져도 종목명은 …로 줄이고 코드는 유지. */}
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="flex min-w-0 items-baseline gap-1.5 font-sans text-[20px] font-semibold leading-tight text-vscode-fg">
+            <span className="truncate" title={stock.name}>
+              {stock.name}
+            </span>
+            <span className="shrink-0 text-[14px] font-normal text-vscode-fg-desc">
+              ({stock.code})
+            </span>
+          </h2>
+          <CurrencyToggle className="mt-0.5 shrink-0" />
+        </div>
 
-        {/* 지표 JSON 블록 */}
+        {/* 지표 JSON 블록 — key 는 한글, 등락률은 전일 종가 대비(당일) 표준. */}
         <div className="mt-3 font-mono text-[13px]">
           <div className="text-vscode-fg-desc">{"{"}</div>
-          <MetricLine name="current" value={metrics.current} />
+          <MetricLine name="현재가" value={metrics.current} />
           <MetricLine
-            name="change"
+            name="등락"
             value={metrics.change}
-            valueClass={changeColorClass(stock.change)}
+            valueClass={changeColorClass(metrics.changeRate)}
           />
-          <MetricLine name="changeRate" value={metrics.changeRate} isString />
-          <MetricLine name="open" value={metrics.open} />
-          <MetricLine name="high" value={metrics.high} />
-          <MetricLine name="low" value={metrics.low} />
-          <MetricLine name="volume" value={metrics.volume} isString />
-          <MetricLine name="value" value={metrics.value} isString />
-          <MetricLine name="marketCap" value={metrics.marketCap} isString />
-          <MetricLine
-            name="timestamp"
-            value={metrics.timestamp}
-            isString
-            last
-          />
+          <MetricLine name="등락률" value={metrics.changeRate} isString />
+          <MetricLine name="거래량" value={metrics.volume} isString />
+          <MetricLine name="거래대금" value={metrics.value} isString />
+          <MetricLine name="갱신시각" value={metrics.timestamp} isString last />
           <div className="text-vscode-fg-desc">{"}"}</div>
         </div>
 
@@ -187,15 +276,16 @@ export function StockDetailPanel({
         <div className="mt-4 flex items-center justify-end">
           <button
             type="button"
-            aria-label="전체 화면"
+            aria-label="차트 확장"
+            title="차트 확장"
             onClick={() => onOpenBigChart?.(stock)}
-            className="flex h-6 w-6 items-center justify-center rounded-[3px] text-vscode-fg-icon hover:bg-vscode-list-hover"
+            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-[3px] border border-vscode-border-input bg-vscode-editor text-vscode-fg-icon hover:bg-vscode-list-hover hover:text-vscode-fg"
           >
             <Codicon icon="codicon-screen-full" size={14} />
           </button>
         </div>
 
-        {/* 차트 — 스파크라인(축·그리드 없는 미니 영역 차트) */}
+        {/* 차트 — 스파크라인(축·그리드 없는 미니 영역 차트), 실제 당일 1분봉 */}
         <PriceChart
           data={chartData}
           up={up}
@@ -204,7 +294,7 @@ export function StockDetailPanel({
           className="mt-2 h-24 w-full"
         />
 
-        {/* 보유 목록 추가 */}
+        {/* 보유 목록 추가 (물타기) — 로그인 무관, 수기 입력. */}
         <button
           type="button"
           onClick={handleAdd}
@@ -222,8 +312,12 @@ export function StockDetailPanel({
         </button>
 
         <p className="mt-2 text-[11px] leading-relaxed text-[var(--vscode-disabledForeground)]">
-          평단가 입력 시 물타기 시뮬레이션이 활성화됩니다. 시세는 지연
-          데이터이며 자동 갱신됩니다.
+          등락·등락률은 전일 종가 대비입니다. 거래대금은 현재가×거래량으로
+          산출한 근사치입니다.
+          <br />
+          평단가 입력 시 물타기 시뮬레이션이 활성화됩니다.
+          <br />
+          시세는 지연 데이터이며 {REFRESH_MS / 1000}초마다 자동 갱신됩니다.
         </p>
       </div>
     </div>

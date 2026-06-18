@@ -8,6 +8,14 @@
 export const GLOBAL_CHAT_ROOM =
   process.env.NEXT_PUBLIC_GLOBAL_CHAT_TICKER ?? "005930";
 
+/**
+ * 전체 채팅방의 위장 표시 라벨.
+ *
+ * 채팅은 종목별이 아닌 단일 전체 채팅만 사용한다. 내부 방 코드(ticker)는
+ * 화면에 노출하지 않고, VS Code workspace 경로처럼 보이는 이 라벨만 띄운다.
+ */
+export const GLOBAL_CHAT_LABEL = "global";
+
 /** 소켓 이벤트 이름 — BE ChatGateway @SubscribeMessage 와 1:1 매핑. */
 export const CHAT_SOCKET_EVENT = {
   JOIN_ROOM: "join_room",

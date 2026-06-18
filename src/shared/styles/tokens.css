@@ -219,7 +219,7 @@
   --activitybar-width: 48px;
   --activitybar-action-height: 48px;    /* 각 아이콘 셀 높이 */
   --activitybar-icon-size: 24px;        /* VS Code 공식값 */
-  --sidebar-width: 300px;
+  --sidebar-width: 250px;
   --panel-height: 220px;
   --statusbar-height: 22px;
   --statusbar-item-padding: 0 5px;

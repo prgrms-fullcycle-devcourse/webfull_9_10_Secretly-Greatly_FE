@@ -61,6 +61,19 @@
 
   /* ── Extra Backgrounds ── */
   --color-vscode-quick-input: var(--vscode-quickInput-background);
+
+  /* ── Animations ── */
+  /* 시세 갱신으로 값이 바뀐 행: hover 배경이 잠깐 들어왔다 빠진다. */
+  --animate-row-flash: row-flash 0.9s ease-out;
+}
+
+@keyframes row-flash {
+  from {
+    background-color: var(--vscode-list-hoverBackground);
+  }
+  to {
+    background-color: transparent;
+  }
 }
 
 /* ── Base ────────────────────────────────────────────── */
@@ -322,7 +335,8 @@ body[data-resizing="panel"] * {
   clip-path: polygon(0 0, 100% 0, 0 100%);
 }
 
-.vscode-walkthrough-card[data-variant="featured"] .vscode-walkthrough-card__icon {
+.vscode-walkthrough-card[data-variant="featured"]
+  .vscode-walkthrough-card__icon {
   z-index: 1;
   align-self: start;
   margin-top: 0;
@@ -330,7 +344,8 @@ body[data-resizing="panel"] * {
   color: #ffffff;
 }
 
-.vscode-walkthrough-card[data-variant="featured"] .vscode-walkthrough-card__content {
+.vscode-walkthrough-card[data-variant="featured"]
+  .vscode-walkthrough-card__content {
   padding-top: 3px;
 }
 
