@@ -1,58 +1,32 @@
 "use client";
 
 /**
- * MarketIndicators — 하단 상태바에 선행지표(KOSPI·NASDAQ FUT·VIX·USD/KRW)를 출력.
+ * MarketIndicators — 하단 상태바에 위장 선행지표(KSP·NSQ·VIX·USD/KRW 등)를 출력.
  *
- * 순수 표현 컴포넌트: 기본은 목 데이터를 보여주고, BE/MSW 연동 시 상위에서
- * `getLeadingIndicators()` 결과를 `indicators` prop으로 주입하면 그대로 표시된다.
+ * 마운트 시 `useStatusBarIndicators()` 로 GET /api/indicators/statusbar 를 호출해
+ * 실데이터를 표시한다. BE 가 현재가·등락률을 "2684.50 (-0.42)" 문자열로 이미
+ * 포맷(보호색 마스킹)해 내려주므로, FE 는 파싱·색상 처리 없이 그대로 출력한다.
  *
- * 스타일은 Tailwind 우선 + 디자인 토큰. 상승=시안, 하락=빨강(앱 전체 규약과 통일).
+ * 스타일은 Tailwind 우선 + 디자인 토큰.
  */
 
-import { MOCK_LEADING_INDICATORS } from "../model/mockData";
-import type { LeadingIndicator } from "../model/types";
+import { useStatusBarIndicators } from "../model/useStatusBarIndicators";
 
-const formatValue = (value: number) =>
-  value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+export function MarketIndicators() {
+  const indicators = useStatusBarIndicators();
 
-const formatChange = (value: number) =>
-  `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
-
-export interface MarketIndicatorsProps {
-  /** 표시할 선행지표 (없으면 목 데이터). */
-  indicators?: LeadingIndicator[];
-}
-
-export function MarketIndicators({
-  indicators = MOCK_LEADING_INDICATORS,
-}: MarketIndicatorsProps) {
   return (
     <div className="flex h-full items-center" aria-label="선행지표">
       {indicators.map((indicator) => (
         <div
-          key={indicator.id}
+          key={indicator.componentId}
           className="statusbar-item"
           title={indicator.label}
         >
           <span className="text-vscode-fg-desc">{indicator.label}</span>
           <span className="font-medium text-vscode-fg-statusbar">
-            {formatValue(indicator.value)}
+            {indicator.value}
           </span>
-          {indicator.changePercent !== undefined && (
-            <span
-              className={
-                indicator.changePercent >= 0
-                  ? "text-terminal-cyan"
-                  : "text-(--vscode-editorGutter-deletedBackground)"
-              }
-            >
-              {indicator.changePercent >= 0 ? "▲" : "▼"}{" "}
-              {formatChange(indicator.changePercent)}
-            </span>
-          )}
         </div>
       ))}
     </div>

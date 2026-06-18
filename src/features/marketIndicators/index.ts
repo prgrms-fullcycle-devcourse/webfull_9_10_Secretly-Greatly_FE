@@ -1,3 +1,4 @@
 export { MarketIndicators } from "./ui";
-export { getLeadingIndicators } from "./api/getLeadingIndicators";
-export type { LeadingIndicator } from "./model/types";
+export { getStatusBarIndicators } from "./api/getStatusBarIndicators";
+export { useStatusBarIndicators } from "./model/useStatusBarIndicators";
+export type { StatusBarIndicator } from "./model/types";
