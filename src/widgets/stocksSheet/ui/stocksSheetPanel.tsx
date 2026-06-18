@@ -482,12 +482,18 @@ export function StocksSheetPanel({
                   <IconButton
                     variant="search"
                     label={
-                      isFavorite(stock.code) ? "즐겨찾기 해제" : "즐겨찾기"
+                      isFavorite(stock.code)
+                        ? "즐겨찾기 해제"
+                        : stock.stockId == null
+                          ? "종목 정보 준비 중 (잠시 후 가능)"
+                          : "즐겨찾기"
                     }
                     pressed={isFavorite(stock.code)}
+                    disabled={!isFavorite(stock.code) && stock.stockId == null}
                     onClick={(event) => {
                       event.stopPropagation();
                       toggleFavorite({
+                        stockId: stock.stockId,
                         code: stock.code,
                         name: stock.name,
                         market: stock.market,

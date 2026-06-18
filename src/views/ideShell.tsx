@@ -142,7 +142,7 @@ export function IdeShell({
   >({});
 
   // 앱 진입 시 1회: 401 자동 로그아웃 핸들러 등록 + 통화 설정 복원.
-  // 즐겨찾기는 로그인 사용자 데이터 → 로그인 시 복원, 비로그인/로그아웃 시 비움(localStorage 는 보존).
+  // 즐겨찾기: 회원=BE / 비회원=localStorage. 로그인 변화마다 hydrate 로 해당 소스에서 다시 불러온다.
   useEffect(() => {
     registerAuthUnauthorizedHandler();
     useCurrencyStore.getState().hydrate();
@@ -152,8 +152,8 @@ export function IdeShell({
     usePositionsStore.getState().hydrate();
     // 시세 리스트(관심목록)도 로그인 무관 localStorage → 복원 (첫 방문이면 기본 15종목 시드).
     useWatchlistStore.getState().hydrate();
-    // 즐겨찾기·KIS 연동상태는 로그인 사용자 데이터 → 로그인 시 복원, 로그아웃 시 비움.
-    // KIS 회원이면 시세 리스트 기본 종목의 stockId(BE 캔들용)를 BE /stocks 로 채운다.
+    // 로그인 회원이면 시세 리스트 기본 종목의 stockId 를 BE /stocks 로 채운다.
+    // stockId 는 BE 캔들(KIS) + 즐겨찾기 등록(POST) 둘 다에 필요 → 비KIS 회원도 채워야 한다.
     // (검색으로 담은 종목은 이미 stockId 보유 → missing 만 1회 조회.)
     const enrichWatchlistStockIds = async () => {
       const missing = useWatchlistStore
@@ -179,18 +179,13 @@ export function IdeShell({
       }
     };
     const syncUserData = () => {
-      const fav = useFavoritesStore.getState();
+      // 즐겨찾기: 회원=BE / 비회원=localStorage (hydrate 내부에서 분기).
+      useFavoritesStore.getState().hydrate();
       if (getStoredSession()) {
-        fav.hydrate();
-        void useKisStore
-          .getState()
-          .hydrate()
-          .then(() => {
-            if (useKisStore.getState().connected)
-              void enrichWatchlistStockIds();
-          });
+        // 회원이면 watchlist stockId 채우기(즐겨찾기 등록·BE 캔들용) + KIS 연동상태 조회.
+        void enrichWatchlistStockIds();
+        void useKisStore.getState().hydrate();
       } else {
-        fav.reset();
         useKisStore.getState().reset();
       }
     };
@@ -226,6 +221,24 @@ export function IdeShell({
   };
 
   const handleFileOpen = (file: TreeFileOpenPayload) => {
+    // 즐겨찾기 종목 클릭 → 큰 차트(에디터·왼쪽) + 상세 패널(오른쪽)을 동시에 연다.
+    // (시세시트 클릭은 기존대로 상세만 — 즐겨찾기에 한해 둘 다.)
+    const fav = useFavoritesStore
+      .getState()
+      .items.find((f) => f.code === file.id);
+    if (fav) {
+      const summary: StockSummary = {
+        stockId: fav.stockId,
+        code: fav.code,
+        name: fav.name,
+        price: "",
+        change: "",
+        volume: "",
+        market: fav.market,
+      };
+      handleOpenBigChart(summary);
+      return;
+    }
     setEditorTabs((prev) => {
       if (prev.some((tab) => tab.id === file.id)) return prev;
       return [...prev, createEditorTab(file)];
@@ -273,6 +286,12 @@ export function IdeShell({
     });
     setActiveEditorTabKey(tabKey);
   };
+
+  // 상세 패널은 활성 차트 탭 종목을 따라간다(차트 탭과 한 세트로 전환·종료).
+  // 활성 탭이 차트가 아니면(시세시트 등) 시트에서 고른 종목(selectedStock)을 보여준다.
+  const activeChartStock =
+    activeEditorTabKey != null ? stockChartTabs[activeEditorTabKey] : undefined;
+  const detailStock = activeChartStock ?? selectedStock;
 
   const handleToggleAgentFullscreen = () => {
     setIsAgentFullscreen((prev) => {
@@ -455,7 +474,7 @@ export function IdeShell({
                   panelRegistry={panelRegistry}
                 />
 
-                {selectedStock && (
+                {detailStock && (
                   <>
                     <div
                       role="separator"
@@ -488,13 +507,21 @@ export function IdeShell({
                       }}
                     />
                     <aside
-                      aria-label={`${selectedStock.name} 상세`}
+                      aria-label={`${detailStock.name} 상세`}
                       className="shrink-0 overflow-hidden"
                       style={{ width: detailWidth }}
                     >
                       <StockDetailPanel
-                        stock={selectedStock}
-                        onClose={() => setSelectedStock(null)}
+                        stock={detailStock}
+                        onClose={() => {
+                          // 차트 탭에서 따라온 상세면 그 차트 탭을 닫고(세트로 종료),
+                          // 시트에서 고른 상세면 선택만 해제한다.
+                          if (activeChartStock && activeEditorTabKey) {
+                            handleCloseEditorTab(activeEditorTabKey);
+                          } else {
+                            setSelectedStock(null);
+                          }
+                        }}
                         onOpenBigChart={handleOpenBigChart}
                       />
                     </aside>

@@ -14,6 +14,7 @@ interface IconButtonProps {
   iconSize?: number;
   iconClassName?: string;
   pressed?: boolean;
+  disabled?: boolean;
   children?: ReactNode;
 }
 
@@ -27,6 +28,7 @@ export function IconButton({
   iconSize = 16,
   iconClassName,
   pressed,
+  disabled = false,
   children,
 }: IconButtonProps) {
   const variantClass =
@@ -39,8 +41,9 @@ export function IconButton({
       title={label}
       aria-label={label}
       aria-pressed={pressed}
+      disabled={disabled}
       onClick={onClick}
-      className={`icon-btn ${variantClass} shrink-0${className ? ` ${className}` : ""}`}
+      className={`icon-btn ${variantClass} shrink-0${disabled ? " cursor-not-allowed opacity-40" : ""}${className ? ` ${className}` : ""}`}
     >
       {icon ? (
         <Codicon icon={icon} size={iconSize} className={iconClassName} />
