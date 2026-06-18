@@ -159,8 +159,15 @@ function ResultItem({
           {canFavorite && (
             <IconButton
               variant="search"
-              label={starred ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+              label={
+                starred
+                  ? "즐겨찾기 해제"
+                  : stock.stockId == null
+                    ? "종목 정보 준비 중 (잠시 후 가능)"
+                    : "즐겨찾기 추가"
+              }
               pressed={starred}
+              disabled={!starred && stock.stockId == null}
               onClick={onToggleStar}
               icon="codicon-star-empty"
               iconSize={13}
@@ -486,6 +493,7 @@ export function SearchView() {
                   }
                   onToggleStar={() =>
                     toggleFavorite({
+                      stockId: stock.stockId,
                       code: stock.code,
                       name: stock.name,
                       market: stock.market,
