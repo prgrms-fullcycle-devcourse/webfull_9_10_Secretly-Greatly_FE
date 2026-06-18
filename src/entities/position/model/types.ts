@@ -5,8 +5,12 @@ export type Currency = "KRW" | "USD";
  * 검색(쓰기)·물타기 패널(읽기)이 함께 사용한다.
  */
 export interface Position {
-  /** 고유 식별자 (티커를 사용 — 중복 추가 방지) */
+  /** 고유 식별자 (종목코드 사용 — 중복 추가 방지·토글 판정) */
   id: string;
+  /** BE 포지션 ID (DELETE /api/positions/{positionId} 용) */
+  positionId: number;
+  /** BE 종목 ID (POST /api/positions 용) */
+  stockId: number;
   /** 종목명 (예: "삼성전자") */
   name: string;
   /** 티커 (예: "005930") */

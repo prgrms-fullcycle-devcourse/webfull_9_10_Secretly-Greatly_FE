@@ -19,7 +19,11 @@ import {
   useRefreshCountdown,
   type DisplayCurrency,
 } from "@/shared/lib";
-import { createPosition, usePositionsStore } from "@/entities/position";
+import { usePositionsStore } from "@/entities/position";
+import {
+  useAddPositionModal,
+  removePositionByCode,
+} from "@/features/positions";
 import { useFavoritesStore } from "@/features/favorites";
 import {
   CurrencyToggle,
@@ -295,8 +299,7 @@ export function StocksSheetPanel({
   const usdKrw = useFxStore((s) => s.usdKrw);
   const timeframe = useTimeframeStore((s) => s.timeframe);
   const positions = usePositionsStore((state) => state.positions);
-  const addPosition = usePositionsStore((state) => state.addPosition);
-  const removePosition = usePositionsStore((state) => state.removePosition);
+  const openAddModal = useAddPositionModal((state) => state.open);
 
   const isFavorite = (code: string) =>
     favoriteItems.some((favorite) => favorite.code === code);
@@ -306,18 +309,16 @@ export function StocksSheetPanel({
 
   const toggleHeld = (stock: StockRow) => {
     if (isHeld(stock.code)) {
-      removePosition(stock.code);
+      void removePositionByCode(stock.code);
       return;
     }
 
-    addPosition(
-      createPosition({
-        code: stock.code,
-        name: stock.name,
-        market: stock.market,
-        price: stock.priceRaw,
-      }),
-    );
+    openAddModal({
+      stockId: stock.stockId,
+      code: stock.code,
+      name: stock.name,
+      price: stock.priceRaw,
+    });
   };
 
   const filteredStocks =
@@ -458,25 +459,27 @@ export function StocksSheetPanel({
               </div>
 
               <span className="ml-auto flex shrink-0 items-center gap-1.5 pl-3 pr-1">
-                <IconButton
-                  variant="search"
-                  label={
-                    isHeld(stock.code) ? "관심종목 추가됨" : "관심종목 추가"
-                  }
-                  pressed={isHeld(stock.code)}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    toggleHeld(stock);
-                  }}
-                  icon={isHeld(stock.code) ? "codicon-check" : "codicon-add"}
-                  iconSize={12}
-                  iconClassName={
-                    isHeld(stock.code)
-                      ? "text-[var(--vscode-editorGutter-addedBackground)]"
-                      : "text-vscode-fg-desc opacity-40"
-                  }
-                  className="h-4 w-4"
-                />
+                {!isGuest && (
+                  <IconButton
+                    variant="search"
+                    label={
+                      isHeld(stock.code) ? "관심종목 추가됨" : "관심종목 추가"
+                    }
+                    pressed={isHeld(stock.code)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleHeld(stock);
+                    }}
+                    icon={isHeld(stock.code) ? "codicon-check" : "codicon-add"}
+                    iconSize={12}
+                    iconClassName={
+                      isHeld(stock.code)
+                        ? "text-[var(--vscode-editorGutter-addedBackground)]"
+                        : "text-vscode-fg-desc opacity-40"
+                    }
+                    className="h-4 w-4"
+                  />
+                )}
 
                 {!isGuest && (
                   <IconButton
