@@ -19,6 +19,7 @@ type MarketKey = "ALL" | "DOMESTIC" | "OVERSEAS" | "COIN";
 type SortKey = "price" | "volume" | "change";
 
 interface StockRow {
+  stockId: number;
   code: string;
   name: string;
   price: string;
@@ -42,68 +43,13 @@ const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
 
 const STOCKS: StockRow[] = [
   {
+    stockId: 1,
     code: "005930",
     name: "삼성전자",
     price: "74500",
     change: "+1.08%",
     volume: "12.43M",
     market: "DOMESTIC",
-  },
-  {
-    code: "000660",
-    name: "SK하이닉스",
-    price: "188300",
-    change: "-0.62%",
-    volume: "4.21M",
-    market: "DOMESTIC",
-  },
-  {
-    code: "035720",
-    name: "카카오",
-    price: "53300",
-    change: "+0.38%",
-    volume: "2.15M",
-    market: "DOMESTIC",
-  },
-  {
-    code: "373220",
-    name: "LG에너지솔루션",
-    price: "483000",
-    change: "-1.25%",
-    volume: "1.02M",
-    market: "DOMESTIC",
-  },
-  {
-    code: "AAPL",
-    name: "Apple Inc.",
-    price: "189.84",
-    change: "+0.78%",
-    volume: "52.21M",
-    market: "OVERSEAS",
-  },
-  {
-    code: "NVDA",
-    name: "NVIDIA Corp.",
-    price: "949.50",
-    change: "+1.30%",
-    volume: "21.15M",
-    market: "OVERSEAS",
-  },
-  {
-    code: "TSLA",
-    name: "Tesla, Inc.",
-    price: "175.43",
-    change: "-1.21%",
-    volume: "84.35M",
-    market: "OVERSEAS",
-  },
-  {
-    code: "BTC",
-    name: "비트코인",
-    price: "93250000",
-    change: "+0.45%",
-    volume: "12.43T",
-    market: "COIN",
   },
 ];
 

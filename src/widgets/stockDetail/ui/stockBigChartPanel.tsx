@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { Codicon } from "@/shared/ui";
 import { changeColorClass, formatByMarket, isUp } from "@/shared/lib";
 import type { StockSummary } from "../model/types";
-import { buildChartData, type ChartRange } from "../model/chartData";
+import { convertCandlesToChartData, type ChartRange } from "../model/chartData";
 import { PriceChart, type ChartHover, type ChartType } from "./priceChart";
+import { useQuery } from "@tanstack/react-query";
+import { getStockCandles } from "@/features/stocks/api";
 
 interface StockBigChartPanelProps {
   stock: StockSummary;
@@ -36,6 +38,21 @@ const PERIODS: Array<{ range: ChartRange; label: string }> = [
 
 /** 이동평균선 기간 (모듈 상수 = 안정적 참조로 effect 재실행 방지). */
 const MA_PERIODS = [5, 20, 60, 120];
+const INTERVAL_BY_RANGE = {
+  "1D": "1d",
+  "1W": "1wk",
+  "1M": "1mo",
+  "3M": "1mo",
+  "1Y": "1mo",
+} as const;
+
+const LIMIT_BY_RANGE = {
+  "1D": 250,
+  "1W": 250,
+  "1M": 250,
+  "3M": 250,
+  "1Y": 365,
+} as const;
 
 export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
   const [range, setRange] = useState<ChartRange>("1D");
@@ -43,15 +60,20 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [hover, setHover] = useState<ChartHover | null>(null);
   const up = isUp(stock.change);
-  const chartData = useMemo(
-    () =>
-      buildChartData(
-        stock.code,
-        Number.parseFloat(stock.price) || 0,
-        up,
-        range,
+  const { data: candles = [], isLoading } = useQuery({
+    queryKey: ["stock-candles", stock.stockId, range],
+    queryFn: () =>
+      getStockCandles(
+        stock.stockId,
+        INTERVAL_BY_RANGE[range],
+        LIMIT_BY_RANGE[range],
       ),
-    [stock.code, stock.price, up, range],
+    enabled: Boolean(stock.stockId),
+  });
+
+  const chartData = useMemo(
+    () => convertCandlesToChartData(candles),
+    [candles],
   );
   const activeType =
     CHART_TYPE_OPTIONS.find((o) => o.type === chartType) ??
@@ -190,6 +212,11 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
             {formatByMarket(close, stock.market)}
           </span>
         </div>
+        {isLoading && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center text-[12px] text-vscode-fg-desc">
+            캔들 데이터를 불러오는 중입니다...
+          </div>
+        )}
 
         <PriceChart
           data={chartData}

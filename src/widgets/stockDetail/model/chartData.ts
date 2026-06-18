@@ -1,3 +1,4 @@
+import type { StockCandle } from "@/features/stocks/api";
 import type {
   CandlestickData,
   HistogramData,
@@ -106,4 +107,26 @@ export function buildChartData(
   });
 
   return { line, candles, volume, baseValue: closes[0] };
+}
+export function convertCandlesToChartData(candles: StockCandle[]): ChartData {
+  const sortedCandles = [...candles].sort((a, b) => a.time - b.time);
+
+  return {
+    line: sortedCandles.map((candle) => ({
+      time: candle.time as UTCTimestamp,
+      value: candle.close,
+    })),
+    candles: sortedCandles.map((candle) => ({
+      time: candle.time as UTCTimestamp,
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+    })),
+    volume: sortedCandles.map((candle) => ({
+      time: candle.time as UTCTimestamp,
+      value: candle.volume,
+    })),
+    baseValue: sortedCandles[0]?.close ?? 0,
+  };
 }
