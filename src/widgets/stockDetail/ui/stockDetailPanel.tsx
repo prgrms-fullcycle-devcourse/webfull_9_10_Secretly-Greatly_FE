@@ -18,7 +18,9 @@ import {
   useFxStore,
 } from "@/features/currency";
 import { useTimeframeStore, type Timeframe } from "@/features/timeframe";
-import { createPosition, usePositionsStore } from "@/entities/position";
+import { usePositionsStore } from "@/entities/position";
+import { useAddPositionModal } from "@/features/positions";
+import { useAuthStore } from "@/features/auth/model";
 import {
   getCandles,
   getMarketQuotes,
@@ -151,7 +153,8 @@ export function StockDetailPanel({
   onOpenBigChart,
 }: StockDetailPanelProps) {
   const positions = usePositionsStore((s) => s.positions);
-  const addPosition = usePositionsStore((s) => s.addPosition);
+  const openAddModal = useAddPositionModal((s) => s.open);
+  const isGuest = !useAuthStore((s) => s.isAuthenticated);
   const currency = useCurrencyStore((s) => s.currency);
   const usdKrw = useFxStore((s) => s.usdKrw);
   const timeframe = useTimeframeStore((s) => s.timeframe);
@@ -208,7 +211,12 @@ export function StockDetailPanel({
 
   const handleAdd = () => {
     if (added) return;
-    addPosition(createPosition(stock));
+    openAddModal({
+      stockId: stock.stockId,
+      code: stock.code,
+      name: stock.name,
+      price: stock.price,
+    });
   };
 
   return (
@@ -294,22 +302,24 @@ export function StockDetailPanel({
           className="mt-2 h-24 w-full"
         />
 
-        {/* 보유 목록 추가 (물타기) — 로그인 무관, 수기 입력. */}
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={added}
-          className={`mt-4 flex w-full items-center justify-center gap-1.5 rounded-[3px] py-1.5 text-[12px] ${
-            added
-              ? "cursor-default bg-vscode-list-active text-vscode-fg"
-              : "bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)] hover:bg-[var(--vscode-button-hoverBackground)]"
-          }`}
-        >
-          <Codicon icon={added ? "codicon-check" : "codicon-add"} size={14} />
-          {added
-            ? "보유 목록에 있음 · 평단가 입력"
-            : "보유 목록에 입력 · 평단가 입력"}
-        </button>
+        {/* 보유 목록 추가 — 로그인 사용자만 노출(BE 연동). */}
+        {!isGuest && (
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={added}
+            className={`mt-4 flex w-full items-center justify-center gap-1.5 rounded-[3px] py-1.5 text-[12px] ${
+              added
+                ? "cursor-default bg-vscode-list-active text-vscode-fg"
+                : "bg-[var(--vscode-button-background)] text-[var(--vscode-button-foreground)] hover:bg-[var(--vscode-button-hoverBackground)]"
+            }`}
+          >
+            <Codicon icon={added ? "codicon-check" : "codicon-add"} size={14} />
+            {added
+              ? "보유 목록에 있음 · 평단가 입력"
+              : "보유 목록에 입력 · 평단가 입력"}
+          </button>
+        )}
 
         <p className="mt-2 text-[11px] leading-relaxed text-[var(--vscode-disabledForeground)]">
           등락·등락률은 전일 종가 대비입니다. 거래대금은 현재가×거래량으로

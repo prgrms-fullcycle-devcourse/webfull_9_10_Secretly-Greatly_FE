@@ -10,7 +10,12 @@ import {
   POSITIONS_TAB,
   type MockTab,
 } from "@/widgets/editorPanel";
-import { PositionsPanel } from "@/features/positions";
+import {
+  PositionsPanel,
+  AddPositionModal,
+  loadPositions,
+  clearPositions,
+} from "@/features/positions";
 import { PanicMode } from "@/features/panichot";
 import { registerAuthUnauthorizedHandler } from "@/features/auth";
 import { useAuthStore } from "@/features/auth/model";
@@ -20,7 +25,6 @@ import { useWatchlistStore } from "@/features/watchlist";
 import { useKisStore } from "@/features/auth/model/kisStore";
 import { getStocks } from "@/features/stocks/api";
 import { useCurrencyStore, useFxStore } from "@/features/currency";
-import { usePositionsStore } from "@/entities/position";
 
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
   {
@@ -151,8 +155,6 @@ export function IdeShell({
     useCurrencyStore.getState().hydrate();
     // 실시간 환율(USD/KRW) — Yahoo 프록시에서 1회 받아 가격 환산에 반영 (KIS·로그인 무관).
     useFxStore.getState().hydrate();
-    // 보유목록(물타기)은 로그인 무관 개인 계산기 → localStorage 복원 (비회원도 유지).
-    usePositionsStore.getState().hydrate();
     // 시세 리스트(관심목록)도 로그인 무관 localStorage → 복원 (첫 방문이면 기본 15종목 시드).
     useWatchlistStore.getState().hydrate();
     // 로그인 회원이면 시세 리스트 기본 종목의 stockId 를 BE /stocks 로 채운다.
@@ -188,8 +190,12 @@ export function IdeShell({
         // 회원이면 watchlist stockId 채우기(즐겨찾기 등록·BE 캔들용) + KIS 연동상태 조회.
         void enrichWatchlistStockIds();
         void useKisStore.getState().hydrate();
+        // 보유목록(내 종목)을 BE 에서 로드 (실패해도 앱은 동작).
+        void loadPositions().catch(() => {});
       } else {
         useKisStore.getState().reset();
+        // 로그아웃 시 보유목록 비움(BE 데이터는 개인용).
+        clearPositions();
       }
     };
     syncUserData();
@@ -416,6 +422,8 @@ export function IdeShell({
   return (
     <ChatProvider>
       <div className="flex flex-col h-screen overflow-hidden bg-vscode-window">
+        {/* 보유종목 추가 모달 (검색·시트·상세 공용, fixed 오버레이) */}
+        <AddPositionModal />
         <TitleBar
           onToggleSidebar={() =>
             setActiveView((prev) => (prev ? null : "explorer"))

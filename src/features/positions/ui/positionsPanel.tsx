@@ -7,7 +7,8 @@
  * 보유 종목을 표로 나열한다. 종목 행을 클릭하면 아래로 펼쳐지며
  * 물타기(추가 매수) 시뮬레이터가 나타난다.
  *
- * 데이터는 현재 목 데이터(`MOCK_POSITIONS`)이며, BE/시세 연동 시 교체한다.
+ * 데이터는 BE(/api/positions)에서 로드해 `usePositionsStore` 에 담긴 보유 종목이다
+ * (로그인 시 ideShell 이 loadPositions 호출). 현재가는 Yahoo 프록시 시세로 보강된다.
  */
 
 import { usePositionsStore } from "@/entities/position";

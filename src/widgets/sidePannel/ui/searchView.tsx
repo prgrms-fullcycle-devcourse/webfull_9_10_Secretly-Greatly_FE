@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Codicon, FileIcon, IconButton } from "@/shared/ui";
-import { createPosition, usePositionsStore } from "@/entities/position";
+import { usePositionsStore } from "@/entities/position";
+import {
+  useAddPositionModal,
+  removePositionByCode,
+} from "@/features/positions";
 import { useFavoritesStore } from "@/features/favorites";
 import { useWatchlistStore } from "@/features/watchlist";
 import { getStocks } from "@/features/stocks";
@@ -108,6 +112,7 @@ function ResultItem({
   stock,
   query,
   added,
+  canAdd,
   bookmarked,
   starred,
   canFavorite,
@@ -118,9 +123,11 @@ function ResultItem({
   stock: StockResult;
   query: string;
   added: boolean;
+  /** 보유추가(+) 가능 여부 — 로그인 사용자만. */
+  canAdd: boolean;
   bookmarked: boolean;
   starred: boolean;
-  /** 즐겨찾기(★) 쓰기 가능 여부 (비로그인은 false). 보유추가(+)는 로그인 무관. */
+  /** 즐겨찾기(★) 쓰기 가능 여부 (비로그인은 false). */
   canFavorite: boolean;
   onToggleAdded: () => void;
   onToggleBookmark: () => void;
@@ -142,20 +149,22 @@ function ResultItem({
           className="flex shrink-0 items-start"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* 보유추가(+)는 로그인 무관(물타기 계산기), 즐겨찾기(★)는 로그인 사용자만. */}
-          <IconButton
-            variant="search"
-            label={added ? "관심종목 추가됨" : "관심종목 추가"}
-            pressed={added}
-            onClick={onToggleAdded}
-            icon={added ? "codicon-check" : "codicon-add"}
-            iconSize={12}
-            iconClassName={
-              added
-                ? "text-[var(--vscode-editorGutter-addedBackground)]"
-                : undefined
-            }
-          />
+          {/* 보유추가(+)·즐겨찾기(★) 모두 로그인 사용자만 노출(BE 연동). */}
+          {canAdd && (
+            <IconButton
+              variant="search"
+              label={added ? "관심종목 추가됨" : "관심종목 추가"}
+              pressed={added}
+              onClick={onToggleAdded}
+              icon={added ? "codicon-check" : "codicon-add"}
+              iconSize={12}
+              iconClassName={
+                added
+                  ? "text-[var(--vscode-editorGutter-addedBackground)]"
+                  : undefined
+              }
+            />
+          )}
           {canFavorite && (
             <IconButton
               variant="search"
@@ -223,8 +232,7 @@ export function SearchView() {
 
   // 보유 종목 공유 스토어 — + 버튼이 물타기 패널 목록에 추가/제거.
   const positions = usePositionsStore((state) => state.positions);
-  const addPosition = usePositionsStore((state) => state.addPosition);
-  const removePosition = usePositionsStore((state) => state.removePosition);
+  const openAddModal = useAddPositionModal((state) => state.open);
 
   // 검색어 변경 시 BE 종목 검색 (GET /api/stocks?keyword=). 300ms 디바운스 + stale 응답 무시.
   useEffect(() => {
@@ -287,9 +295,14 @@ export function SearchView() {
 
   const toggleAdded = (stock: StockResult) => {
     if (positions.some((p) => p.id === stock.code)) {
-      removePosition(stock.code);
+      void removePositionByCode(stock.code);
     } else {
-      addPosition(createPosition(stock));
+      openAddModal({
+        stockId: stock.stockId,
+        code: stock.code,
+        name: stock.name,
+        price: stock.price,
+      });
     }
   };
 
@@ -479,6 +492,7 @@ export function SearchView() {
                   stock={stock}
                   query={query}
                   added={positions.some((p) => p.id === stock.code)}
+                  canAdd={!isGuest}
                   bookmarked={isWatched(stock.code)}
                   starred={isFavorite(stock.code)}
                   canFavorite={!isGuest}

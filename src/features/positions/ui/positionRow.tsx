@@ -7,9 +7,13 @@
  * 물타기 시뮬레이터(`DcaSimulator`)가 나타난다.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Codicon } from "@/shared/ui";
 import { usePositionsStore, type Position } from "@/entities/position";
+import {
+  persistPositionEdit,
+  removePositionByCode,
+} from "../model/positionsSync";
 import { getPositionMetrics } from "../model/metrics";
 import {
   formatAmount,
@@ -29,7 +33,38 @@ const cellInput =
 export function PositionRow({ position }: { position: Position }) {
   const [expanded, setExpanded] = useState(false);
   const updatePosition = usePositionsStore((state) => state.updatePosition);
-  const removePosition = usePositionsStore((state) => state.removePosition);
+
+  // 포커스 진입 시 값을 스냅샷, 벗어날 때 "실제 변경됐고 유효할 때만" BE 에 영속(PATCH).
+  const editSnapshotRef = useRef<{
+    avgPrice: number;
+    quantity: number;
+  } | null>(null);
+
+  const captureEditSnapshot = () => {
+    editSnapshotRef.current = {
+      avgPrice: position.avgPrice,
+      quantity: position.quantity,
+    };
+  };
+
+  const persistEdit = () => {
+    const snapshot = editSnapshotRef.current;
+    // 포커스 후 값이 그대로면 호출하지 않는다(불필요한 PATCH 방지).
+    if (
+      !snapshot ||
+      (snapshot.avgPrice === position.avgPrice &&
+        snapshot.quantity === position.quantity)
+    ) {
+      return;
+    }
+    if (position.avgPrice > 0 && position.quantity > 0) {
+      // persistPositionEdit 는 내부에서 에러를 처리(롤백)하므로 reject 하지 않는다.
+      void persistPositionEdit(position.positionId, {
+        averagePrice: position.avgPrice,
+        quantity: position.quantity,
+      });
+    }
+  };
 
   const { marketValue, profit, profitRate } = getPositionMetrics(position);
 
@@ -72,6 +107,7 @@ export function PositionRow({ position }: { position: Position }) {
           aria-label="평단가"
           value={Number.isFinite(position.avgPrice) ? position.avgPrice : ""}
           onClick={(e) => e.stopPropagation()}
+          onFocus={captureEditSnapshot}
           onChange={(e) =>
             updatePosition(position.id, {
               avgPrice: Number.isFinite(e.target.valueAsNumber)
@@ -79,6 +115,7 @@ export function PositionRow({ position }: { position: Position }) {
                 : 0,
             })
           }
+          onBlur={persistEdit}
           className={cellInput}
         />
 
@@ -89,6 +126,7 @@ export function PositionRow({ position }: { position: Position }) {
           aria-label="수량"
           value={Number.isFinite(position.quantity) ? position.quantity : ""}
           onClick={(e) => e.stopPropagation()}
+          onFocus={captureEditSnapshot}
           onChange={(e) =>
             updatePosition(position.id, {
               quantity: Number.isFinite(e.target.valueAsNumber)
@@ -96,6 +134,7 @@ export function PositionRow({ position }: { position: Position }) {
                 : 0,
             })
           }
+          onBlur={persistEdit}
           className={cellInput}
         />
 
@@ -127,7 +166,7 @@ export function PositionRow({ position }: { position: Position }) {
           aria-label={`${position.name} 삭제`}
           onClick={(e) => {
             e.stopPropagation();
-            removePosition(position.id);
+            void removePositionByCode(position.id);
           }}
           className="flex h-6 w-6 items-center justify-center justify-self-end rounded-(--radius-xs) text-vscode-fg-icon hover:bg-(--vscode-list-hoverBackground)"
         >
