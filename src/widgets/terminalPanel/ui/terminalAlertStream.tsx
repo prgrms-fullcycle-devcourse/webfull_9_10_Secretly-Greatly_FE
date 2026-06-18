@@ -84,14 +84,6 @@ const SEED_LOGS: TerminalLog[] = [
     change: -1.21,
   },
   {
-    id: "s6",
-    time: "09:31:15",
-    level: "INFO",
-    label: "비트코인 (BTC.KRW)",
-    value: "93,250,000",
-    change: 0.45,
-  },
-  {
     id: "s7",
     time: "09:31:20",
     level: "ALERT",
@@ -113,7 +105,6 @@ const WATCHLIST = [
   { label: "NVIDIA Corp. (NVDA.US)", base: 949.5 },
   { label: "Apple Inc. (AAPL.US)", base: 189.84 },
   { label: "Tesla, Inc. (TSLA.US)", base: 175.43 },
-  { label: "비트코인 (BTC.KRW)", base: 93250000 },
 ];
 
 function nowTime(): string {

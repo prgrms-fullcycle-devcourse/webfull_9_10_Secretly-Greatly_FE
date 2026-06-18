@@ -10,16 +10,13 @@ export const EXPLORER_TREE: TreeNode[] = [
         id: "stocks",
         name: "stocks",
         type: "folder",
-        children: [
-          "ALL.sheet",
-          "DOMESTIC.sheet",
-          "OVERSEAS.sheet",
-          "COIN.sheet",
-        ].map((filename) => ({
-          id: `stocks-${filename}`,
-          name: filename,
-          type: "file" as const,
-        })),
+        children: ["ALL.sheet", "DOMESTIC.sheet", "OVERSEAS.sheet"].map(
+          (filename) => ({
+            id: `stocks-${filename}`,
+            name: filename,
+            type: "file" as const,
+          }),
+        ),
       },
       {
         id: "my-stock",

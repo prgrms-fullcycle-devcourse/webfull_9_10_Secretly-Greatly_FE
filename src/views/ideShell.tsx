@@ -3,6 +3,7 @@
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { NotificationCenter, type NotificationItem } from "@/shared/ui";
+import { getStoredSession, onAuthChange } from "@/shared/api";
 import {
   EditorGroup,
   NEWS_FEED_TAB,
@@ -14,12 +15,15 @@ import { PanicMode } from "@/features/panichot";
 import { registerAuthUnauthorizedHandler } from "@/features/auth";
 import { ChatProvider } from "@/features/chat";
 import { useFavoritesStore } from "@/features/favorites";
+import { useWatchlistStore } from "@/features/watchlist";
+import { useCurrencyStore, useFxStore } from "@/features/currency";
+import { usePositionsStore } from "@/entities/position";
 
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
   {
     id: "1",
     severity: "error",
-    message: "BTC-KRW 변동성 임계치 도달 (-3.42% · 15분).",
+    message: "NVDA 변동성 임계치 도달 (-3.42% · 15분).",
     source: "Terminal Alert",
     actions: [{ label: "Open", primary: true, dismissOnClick: true }],
   },
@@ -45,10 +49,16 @@ import {
 import { AgentPanel } from "@/widgets/agentPanel";
 import { SettingsPanel } from "@/widgets/settingsPanel";
 
+const SIDEBAR_DEFAULT_WIDTH = 250;
 const SIDEBAR_MIN_WIDTH = 180;
 const SIDEBAR_MAX_WIDTH = 560;
+/** 왼쪽 사이드바를 이 폭보다 더 좁히면(거의 0) VSCode 처럼 닫힌다. */
+const SIDEBAR_COLLAPSE_WIDTH = 90;
 const PANEL_MIN_HEIGHT = 120;
 const PANEL_MAX_HEIGHT_OFFSET = 180;
+/** 주식 상세 패널 가로폭 — 최소는 지표/차트가 깨지지 않는 선, 최대는 과하지 않게. */
+const DETAIL_MIN_WIDTH = 300;
+const DETAIL_MAX_WIDTH = 640;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -115,7 +125,8 @@ export function IdeShell({
   const [activeEditorTabKey, setActiveEditorTabKey] = useState<string | null>(
     null,
   );
-  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT_WIDTH);
+  const [detailWidth, setDetailWidth] = useState(340);
   const [panelHeight, setPanelHeight] = useState(220);
   const [isPanelVisible, setIsPanelVisible] = useState(true);
   // 사이트 진입 시 에이전트(채팅) 패널을 기본으로 열어둔다.
@@ -128,10 +139,25 @@ export function IdeShell({
     Record<string, StockSummary>
   >({});
 
-  // 앱 진입 시 1회: 401 자동 로그아웃 핸들러 등록 + 즐겨찾기 localStorage 복원.
+  // 앱 진입 시 1회: 401 자동 로그아웃 핸들러 등록 + 통화 설정 복원.
+  // 즐겨찾기는 로그인 사용자 데이터 → 로그인 시 복원, 비로그인/로그아웃 시 비움(localStorage 는 보존).
   useEffect(() => {
     registerAuthUnauthorizedHandler();
-    useFavoritesStore.getState().hydrate();
+    useCurrencyStore.getState().hydrate();
+    // 실시간 환율(USD/KRW) — Yahoo 프록시에서 1회 받아 가격 환산에 반영 (KIS·로그인 무관).
+    useFxStore.getState().hydrate();
+    // 보유목록(물타기)은 로그인 무관 개인 계산기 → localStorage 복원 (비회원도 유지).
+    usePositionsStore.getState().hydrate();
+    // 시세 리스트(관심목록)도 로그인 무관 localStorage → 복원 (첫 방문이면 기본 15종목 시드).
+    useWatchlistStore.getState().hydrate();
+    // 즐겨찾기는 로그인 사용자 데이터 → 로그인 시 복원, 비로그인/로그아웃 시 비움.
+    const syncFavorites = () => {
+      const fav = useFavoritesStore.getState();
+      if (getStoredSession()) fav.hydrate();
+      else fav.reset();
+    };
+    syncFavorites();
+    return onAuthChange(syncFavorites);
   }, []);
 
   const panelRegistry: Record<string, (tab: MockTab) => ReactNode> = {
@@ -227,8 +253,19 @@ export function IdeShell({
     const startWidth = sidebarWidth;
     document.body.dataset.resizing = "sidebar";
 
+    let collapsed = false;
     const handlePointerMove = (moveEvent: PointerEvent) => {
+      // 접힌 뒤엔 더 이상 폭을 갱신하지 않는다 (stray pointermove 가 폭을 망가뜨리던 버그 방지).
+      if (collapsed) return;
       const nextWidth = startWidth + moveEvent.clientX - startX;
+      // VSCode 처럼 최소폭보다 더 좁히면(거의 0) 사이드바를 닫는다 (왼쪽만).
+      if (nextWidth < SIDEBAR_COLLAPSE_WIDTH) {
+        collapsed = true;
+        setActiveView(null);
+        // 재오픈 시 기본 폭으로 (망가진/맥스 폭으로 열리지 않게).
+        setSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
+        return;
+      }
       setSidebarWidth(clamp(nextWidth, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH));
     };
 
@@ -255,6 +292,28 @@ export function IdeShell({
       setSecondarySidebarWidth(
         clamp(nextWidth, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH),
       );
+    };
+
+    const stopResize = () => {
+      document.body.removeAttribute("data-resizing");
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", stopResize);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", stopResize);
+  };
+
+  const startDetailResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = detailWidth;
+    document.body.dataset.resizing = "sidebar";
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      // 상세는 오른쪽에 있으므로 왼쪽으로 끌수록 넓어진다.
+      const nextWidth = startWidth - (moveEvent.clientX - startX);
+      setDetailWidth(clamp(nextWidth, DETAIL_MIN_WIDTH, DETAIL_MAX_WIDTH));
     };
 
     const stopResize = () => {
@@ -359,16 +418,49 @@ export function IdeShell({
                 />
 
                 {selectedStock && (
-                  <aside
-                    aria-label={`${selectedStock.name} 상세`}
-                    className="w-[340px] shrink-0 overflow-hidden"
-                  >
-                    <StockDetailPanel
-                      stock={selectedStock}
-                      onClose={() => setSelectedStock(null)}
-                      onOpenBigChart={handleOpenBigChart}
+                  <>
+                    <div
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label="Resize stock detail"
+                      className="resize-handle resize-handle-vertical"
+                      tabIndex={0}
+                      onPointerDown={startDetailResize}
+                      onKeyDown={(event) => {
+                        if (event.key === "ArrowLeft") {
+                          event.preventDefault();
+                          setDetailWidth((value) =>
+                            clamp(
+                              value + 10,
+                              DETAIL_MIN_WIDTH,
+                              DETAIL_MAX_WIDTH,
+                            ),
+                          );
+                        }
+                        if (event.key === "ArrowRight") {
+                          event.preventDefault();
+                          setDetailWidth((value) =>
+                            clamp(
+                              value - 10,
+                              DETAIL_MIN_WIDTH,
+                              DETAIL_MAX_WIDTH,
+                            ),
+                          );
+                        }
+                      }}
                     />
-                  </aside>
+                    <aside
+                      aria-label={`${selectedStock.name} 상세`}
+                      className="shrink-0 overflow-hidden"
+                      style={{ width: detailWidth }}
+                    >
+                      <StockDetailPanel
+                        stock={selectedStock}
+                        onClose={() => setSelectedStock(null)}
+                        onOpenBigChart={handleOpenBigChart}
+                      />
+                    </aside>
+                  </>
                 )}
               </div>
               {isPanelVisible && (

@@ -5,6 +5,7 @@ import type {
   Time,
   UTCTimestamp,
 } from "lightweight-charts";
+import type { Candle } from "@/features/stocks";
 
 export const CHART_RANGES = ["1D", "1W", "1M", "3M", "1Y"] as const;
 export type ChartRange = (typeof CHART_RANGES)[number];
@@ -106,4 +107,29 @@ export function buildChartData(
   });
 
   return { line, candles, volume, baseValue: closes[0] };
+}
+
+/** Yahoo 캔들(OHLCV) → Lightweight Charts ChartData. 시각은 unix seconds = UTCTimestamp. */
+export function candlesToChartData(candles: Candle[]): ChartData {
+  const line: LineData<Time>[] = [];
+  const candleData: CandlestickData<Time>[] = [];
+  const volume: HistogramData<Time>[] = [];
+  for (const c of candles) {
+    const time = c.time as UTCTimestamp;
+    line.push({ time, value: c.close });
+    candleData.push({
+      time,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    });
+    volume.push({ time, value: c.volume });
+  }
+  return {
+    line,
+    candles: candleData,
+    volume,
+    baseValue: candles[0]?.close ?? 0,
+  };
 }

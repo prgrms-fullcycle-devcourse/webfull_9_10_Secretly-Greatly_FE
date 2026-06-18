@@ -1,24 +1,53 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Codicon } from "@/shared/ui";
-import { changeColorClass, formatByMarket, isUp } from "@/shared/lib";
+import { useState } from "react";
+import { CapsuleToggle, Codicon, type CapsuleToggleOption } from "@/shared/ui";
+import {
+  changeColorClass,
+  formatPrice,
+  useRefreshCountdown,
+} from "@/shared/lib";
+import { useCurrencyStore, useFxStore } from "@/features/currency";
+import {
+  getCandles,
+  getMarketQuotes,
+  toYahooSymbol,
+  type MarketQuote,
+} from "@/features/stocks";
 import type { StockSummary } from "../model/types";
-import { buildChartData, type ChartRange } from "../model/chartData";
-import { PriceChart, type ChartHover, type ChartType } from "./priceChart";
+import { candlesToChartData, type ChartData } from "../model/chartData";
+import { PriceChart, type ChartType } from "./priceChart";
 
 interface StockBigChartPanelProps {
   stock: StockSummary;
 }
 
-/** 확장 차트 타입 메뉴 — lightweight-charts가 지원하는 7종. */
+/**
+ * 봉 단위(캔들 간격) — Yahoo interval 로 매핑. 차트 자체 옵션이라
+ * 리스트/상세의 등락률 분봉(공유 store)과는 별개로 차트에서만 제어한다.
+ * 분 단위는 드롭다운에 접고(트뷰식), 일/주/월은 바로 누르는 버튼. (Yahoo 미지원: 120·240분·년봉 제외.)
+ */
+const MINUTE_OPTIONS: ReadonlyArray<CapsuleToggleOption<string>> = [
+  { value: "1m", label: "1분" },
+  { value: "5m", label: "5분" },
+  { value: "15m", label: "15분" },
+  { value: "30m", label: "30분" },
+  { value: "60m", label: "1시간" },
+];
+const UNIT_OPTIONS: ReadonlyArray<CapsuleToggleOption<string>> = [
+  { value: "1d", label: "일" },
+  { value: "1wk", label: "주" },
+  { value: "1mo", label: "월" },
+];
+
+/** 차트 모양 — PriceChart(lightweight-charts) 지원 7종. */
 const CHART_TYPE_OPTIONS: Array<{
   type: ChartType;
   label: string;
   icon: string;
 }> = [
-  { type: "bar", label: "바", icon: "codicon-graph-line" },
   { type: "candles", label: "캔들", icon: "codicon-graph" },
+  { type: "bar", label: "바", icon: "codicon-graph-scatter" },
   { type: "line", label: "라인", icon: "codicon-pulse" },
   { type: "stepline", label: "스텝 라인", icon: "codicon-graph-line" },
   { type: "area", label: "영역", icon: "codicon-graph" },
@@ -26,108 +55,183 @@ const CHART_TYPE_OPTIONS: Array<{
   { type: "column", label: "컬럼", icon: "codicon-graph-scatter" },
 ];
 
-/** 상단 기간 버튼 — 캡쳐처럼 일/주/월/년. */
-const PERIODS: Array<{ range: ChartRange; label: string }> = [
-  { range: "1D", label: "일" },
-  { range: "1W", label: "주" },
-  { range: "1M", label: "월" },
-  { range: "1Y", label: "년" },
-];
-
 /** 이동평균선 기간 (모듈 상수 = 안정적 참조로 effect 재실행 방지). */
 const MA_PERIODS = [5, 20, 60, 120];
 
+/** 차트 자동 갱신 주기 (초) — 시세 리스트와 같은 주기 + 카운트다운. */
+const REFRESH_SEC = 5;
+
 export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
-  const [range, setRange] = useState<ChartRange>("1D");
+  const [interval, setInterval] = useState("15m");
+  // 드롭다운에 보일 분 단위 라벨용 — 일/주/월을 골라도 마지막 분 단위를 기억.
+  const [lastMinute, setLastMinute] = useState("15m");
   const [chartType, setChartType] = useState<ChartType>("candles");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [hover, setHover] = useState<ChartHover | null>(null);
-  const up = isUp(stock.change);
-  const chartData = useMemo(
-    () =>
-      buildChartData(
-        stock.code,
-        Number.parseFloat(stock.price) || 0,
-        up,
-        range,
-      ),
-    [stock.code, stock.price, up, range],
+  const [intervalMenuOpen, setIntervalMenuOpen] = useState(false);
+  const [chartData, setChartData] = useState<ChartData | null>(null);
+  const [quote, setQuote] = useState<MarketQuote | null>(null);
+  const [error, setError] = useState(false);
+  const currency = useCurrencyStore((s) => s.currency);
+  const usdKrw = useFxStore((s) => s.usdKrw);
+
+  const symbol = toYahooSymbol(stock.code, stock.market);
+
+  // 자동 갱신 폴링 (공통 훅). 종목/주기 바뀌면 즉시 재조회. 큰 차트는 카운트다운 표시 없이 폴링만.
+  useRefreshCountdown(
+    (isActive) => {
+      Promise.all([getCandles(symbol, interval), getMarketQuotes([symbol])])
+        .then(([candles, quotes]) => {
+          if (!isActive()) return;
+          if (candles.length === 0) {
+            setError(true);
+            return;
+          }
+          setChartData(candlesToChartData(candles));
+          setQuote(quotes[0] ?? null);
+          setError(false);
+        })
+        .catch(() => {
+          if (isActive()) setError(true);
+        });
+    },
+    `${symbol}:${interval}`,
+    REFRESH_SEC,
   );
+
+  const last = chartData?.candles.at(-1);
+  const up = last ? last.close >= (chartData?.baseValue ?? last.close) : true;
   const activeType =
     CHART_TYPE_OPTIONS.find((o) => o.type === chartType) ??
-    CHART_TYPE_OPTIONS[1];
-
-  // 크로스헤어가 가리키는 봉(없으면 마지막 봉) → 범례 OHLC
-  const bar = hover?.open != null ? hover : chartData.candles.at(-1);
-  const close = hover?.value ?? bar?.close;
-  const ohlcColor =
-    (close ?? 0) >= (bar?.open ?? 0) ? "var(--chart-up)" : "var(--chart-down)";
+    CHART_TYPE_OPTIONS[0];
+  // 분 단위가 활성일 때만 드롭다운 강조. 라벨은 마지막으로 고른 분 단위를 보여준다.
+  const minuteActive = MINUTE_OPTIONS.some((o) => o.value === interval);
+  const minuteLabel = (
+    MINUTE_OPTIONS.find((o) => o.value === lastMinute) ?? MINUTE_OPTIONS[0]
+  ).label;
+  const pickMinute = (value: string) => {
+    setInterval(value);
+    setLastMinute(value);
+    setIntervalMenuOpen(false);
+  };
+  // 헤더 금액 — 선택 통화(강조) + 반대 통화(보조) 둘 다 표시.
+  const otherCurrency = currency === "USD" ? "KRW" : "USD";
+  const changePct =
+    quote?.changePercent != null
+      ? `${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%`
+      : null;
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-vscode-editor text-vscode-fg">
-      <div className="flex shrink-0 items-center justify-between border-b border-vscode-border-panel px-5 py-3">
+      <div className="flex shrink-0 items-end justify-between border-b border-vscode-border-panel px-5 py-3">
         <div className="min-w-0">
-          <div className="mb-1 flex items-center gap-1.5 text-[11px] text-vscode-fg-desc">
-            <span>CHART</span>
-            <span>{stock.code}.bigchart</span>
-          </div>
-          <div className="flex min-w-0 items-baseline gap-2">
+          {/* 1행: 종목명 + 코드 */}
+          <div className="flex min-w-0 items-baseline gap-1.5">
             <h2 className="truncate text-[18px] font-semibold leading-tight text-vscode-fg">
               {stock.name}
             </h2>
             <span className="font-mono text-[12px] text-vscode-fg-desc">
               {stock.code}
             </span>
-            <span className="font-mono text-[18px] text-vscode-fg">
-              {stock.price}
-            </span>
-            <span
-              className={`font-mono text-[12px] ${changeColorClass(stock.change)}`}
-            >
-              {stock.change}
-            </span>
           </div>
+          {/* 2행: 선택 통화 금액(강조) + 반대 통화 금액(보조) + 등락률 */}
+          {quote?.price != null && (
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="font-mono text-[20px] text-vscode-fg">
+                {formatPrice(quote.price, stock.market, currency, usdKrw)}
+              </span>
+              <span className="font-mono text-[13px] text-vscode-fg-desc">
+                {formatPrice(quote.price, stock.market, otherCurrency, usdKrw)}
+              </span>
+              {changePct != null && (
+                <span
+                  className={`font-mono text-[13px] ${changeColorClass(changePct)}`}
+                >
+                  {changePct}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* 상단 툴바 — 기간(일/주/월/년) + 차트 타입 선택 */}
         <div className="flex shrink-0 items-center gap-3">
-          <div className="flex items-center gap-0.5">
-            {PERIODS.map((period) => {
-              const active = period.range === range;
-              return (
-                <button
-                  key={period.range}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setRange(period.range)}
-                  className={`h-6 w-7 rounded-[3px] text-[12px] ${
-                    active
-                      ? "bg-vscode-list-active text-vscode-fg"
-                      : "text-vscode-fg-desc hover:bg-vscode-list-hover"
-                  }`}
-                >
-                  {period.label}
-                </button>
-              );
-            })}
+          {/* 봉 단위 — 분 단위는 드롭다운, 일/주/월은 버튼 (트뷰식). Yahoo interval 제어. */}
+          <div className="flex items-center gap-1.5">
+            <div className="relative">
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={intervalMenuOpen}
+                title="봉 단위 (분)"
+                onClick={() => setIntervalMenuOpen((o) => !o)}
+                className={`flex h-6 cursor-pointer items-center gap-1 rounded-[3px] border border-vscode-border-input px-1.5 text-[12px] hover:bg-vscode-list-hover ${
+                  minuteActive
+                    ? "bg-vscode-list-active font-medium text-vscode-fg"
+                    : "bg-vscode-editor text-vscode-fg-desc"
+                }`}
+              >
+                <span>{minuteLabel}</span>
+                <Codicon icon="codicon-chevron-down" size={12} />
+              </button>
+              {intervalMenuOpen && (
+                <>
+                  <button
+                    type="button"
+                    aria-hidden
+                    tabIndex={-1}
+                    onClick={() => setIntervalMenuOpen(false)}
+                    className="fixed inset-0 z-(--z-dropdown) cursor-default"
+                  />
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-7 z-[calc(var(--z-dropdown)+1)] min-w-24 rounded-[5px] border border-vscode-border-menu bg-vscode-menu py-1 shadow-(--shadow-dropdown)"
+                  >
+                    {MINUTE_OPTIONS.map((option) => {
+                      const active = option.value === interval;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={active}
+                          onClick={() => pickMinute(option.value)}
+                          className="flex h-6.5 w-full cursor-pointer items-center gap-2 px-2.5 text-left text-[13px] text-(--vscode-menu-foreground) hover:bg-(--vscode-menu-selectionBackground) hover:text-(--vscode-menu-selectionForeground)"
+                        >
+                          <span className="flex w-3.5 justify-center">
+                            {active && (
+                              <Codicon icon="codicon-check" size={13} />
+                            )}
+                          </span>
+                          <span>{option.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* 일·주·월 — 공통 CapsuleToggle. 분 단위 활성 땐 아무것도 강조 안 됨(정상). */}
+            <CapsuleToggle
+              options={UNIT_OPTIONS}
+              value={interval}
+              onChange={setInterval}
+            />
           </div>
 
-          <div className="h-4 w-px bg-vscode-border-panel" />
-
-          {/* 차트 타입 선택 — VSCode 드롭다운 메뉴 */}
+          {/* 차트 모양 — 우리 디자인 드롭다운 (캔들/바/라인/영역…). 봉 단위 뒤에 둔다. */}
           <div className="relative">
             <button
               type="button"
               aria-haspopup="menu"
               aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((open) => !open)}
-              className="flex h-6 items-center gap-1.5 rounded-[3px] px-2 text-[12px] text-vscode-fg hover:bg-vscode-list-hover"
+              aria-label={`차트 모양: ${activeType.label}`}
+              title={`차트 모양: ${activeType.label}`}
+              onClick={() => setMenuOpen((o) => !o)}
+              className="flex h-6 cursor-pointer items-center gap-1 rounded-[3px] border border-vscode-border-input bg-vscode-editor px-1.5 text-vscode-fg hover:bg-vscode-list-hover"
             >
-              <Codicon icon={activeType.icon} size={14} />
-              <span>{activeType.label}</span>
+              <Codicon icon={activeType.icon} size={15} />
               <Codicon icon="codicon-chevron-down" size={12} />
             </button>
-
             {menuOpen && (
               <>
                 <button
@@ -153,7 +257,7 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
                           setChartType(option.type);
                           setMenuOpen(false);
                         }}
-                        className="flex h-6.5 w-full items-center gap-2 px-2.5 text-left text-[13px] text-(--vscode-menu-foreground) hover:bg-(--vscode-menu-selectionBackground) hover:text-(--vscode-menu-selectionForeground)"
+                        className="flex h-6.5 w-full cursor-pointer items-center gap-2 px-2.5 text-left text-[13px] text-(--vscode-menu-foreground) hover:bg-(--vscode-menu-selectionBackground) hover:text-(--vscode-menu-selectionForeground)"
                       >
                         <span className="flex w-3.5 justify-center">
                           {active && <Codicon icon="codicon-check" size={13} />}
@@ -171,36 +275,22 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
       </div>
 
       <div className="relative min-h-0 flex-1 px-5 pb-4 pt-3">
-        {/* 범례 — 크로스헤어 OHLC (커서 추종) */}
-        <div className="pointer-events-none absolute left-7 top-5 z-10 flex items-center gap-2 font-mono text-[11px]">
-          <span className="text-vscode-fg-desc">시</span>
-          <span style={{ color: ohlcColor }}>
-            {formatByMarket(bar?.open, stock.market)}
-          </span>
-          <span className="text-vscode-fg-desc">고</span>
-          <span style={{ color: ohlcColor }}>
-            {formatByMarket(bar?.high, stock.market)}
-          </span>
-          <span className="text-vscode-fg-desc">저</span>
-          <span style={{ color: ohlcColor }}>
-            {formatByMarket(bar?.low, stock.market)}
-          </span>
-          <span className="text-vscode-fg-desc">종</span>
-          <span style={{ color: ohlcColor }}>
-            {formatByMarket(close, stock.market)}
-          </span>
-        </div>
-
-        <PriceChart
-          data={chartData}
-          up={up}
-          type={chartType}
-          variant="full"
-          movingAverages={MA_PERIODS}
-          showVolume
-          onHover={setHover}
-          className="h-full w-full"
-        />
+        {chartData ? (
+          <PriceChart
+            data={chartData}
+            up={up}
+            type={chartType}
+            variant="full"
+            movingAverages={MA_PERIODS}
+            showVolume
+            fitKey={`${symbol}:${interval}`}
+            className="h-full w-full"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-[13px] text-vscode-fg-desc">
+            {error ? "차트 데이터를 불러오지 못했습니다." : "차트 불러오는 중…"}
+          </div>
+        )}
       </div>
     </div>
   );

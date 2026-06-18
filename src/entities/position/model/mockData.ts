@@ -21,15 +21,6 @@ export const MOCK_POSITIONS: Position[] = [
     currentPrice: 949.5,
   },
   {
-    id: "BTC",
-    name: "비트코인",
-    ticker: "BTC",
-    currency: "KRW",
-    avgPrice: 88200000,
-    quantity: 0.12,
-    currentPrice: 93250000,
-  },
-  {
     id: "035720",
     name: "카카오",
     ticker: "035720",
