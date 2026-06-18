@@ -13,6 +13,7 @@ import {
 import { PositionsPanel } from "@/features/positions";
 import { PanicMode } from "@/features/panichot";
 import { registerAuthUnauthorizedHandler } from "@/features/auth";
+import { useAuthStore } from "@/features/auth/model";
 import { ChatProvider } from "@/features/chat";
 import { useFavoritesStore } from "@/features/favorites";
 import { useWatchlistStore } from "@/features/watchlist";
@@ -145,6 +146,8 @@ export function IdeShell({
   // 즐겨찾기: 회원=BE / 비회원=localStorage. 로그인 변화마다 hydrate 로 해당 소스에서 다시 불러온다.
   useEffect(() => {
     registerAuthUnauthorizedHandler();
+    // 로그인 상태(authStore)를 앱 루트에서 1회 복원 — 시세시트·검색의 ★ 노출이 이걸 본다.
+    useAuthStore.getState().hydrate();
     useCurrencyStore.getState().hydrate();
     // 실시간 환율(USD/KRW) — Yahoo 프록시에서 1회 받아 가격 환산에 반영 (KIS·로그인 무관).
     useFxStore.getState().hydrate();

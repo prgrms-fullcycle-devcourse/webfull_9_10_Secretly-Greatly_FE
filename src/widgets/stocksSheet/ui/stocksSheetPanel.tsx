@@ -8,7 +8,7 @@ import {
   Select,
   type SelectOption,
 } from "@/shared/ui";
-import { getStoredSession } from "@/shared/api";
+import { useAuthStore } from "@/features/auth/model";
 import {
   changeColorClass,
   compactKo,
@@ -236,7 +236,7 @@ export function StocksSheetPanel({
   const [allRows, setAllRows] = useState<StockRow[]>(() => cachedRows);
   const [loading, setLoading] = useState(() => cachedRows.length === 0);
   const [error, setError] = useState(false);
-  const [isGuest] = useState(() => getStoredSession() == null);
+  const isGuest = !useAuthStore((s) => s.isAuthenticated);
   const prevPricesRef = useRef<Map<string, number | null>>(new Map());
   const [flashCodes, setFlashCodes] = useState<Set<string>>(new Set());
   const watchlist = useWatchlistStore((s) => s.items);
