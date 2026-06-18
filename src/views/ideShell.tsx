@@ -16,6 +16,8 @@ import { registerAuthUnauthorizedHandler } from "@/features/auth";
 import { ChatProvider } from "@/features/chat";
 import { useFavoritesStore } from "@/features/favorites";
 import { useWatchlistStore } from "@/features/watchlist";
+import { useKisStore } from "@/features/auth/model/kisStore";
+import { getStocks } from "@/features/stocks/api";
 import { useCurrencyStore, useFxStore } from "@/features/currency";
 import { usePositionsStore } from "@/entities/position";
 
@@ -150,14 +152,50 @@ export function IdeShell({
     usePositionsStore.getState().hydrate();
     // 시세 리스트(관심목록)도 로그인 무관 localStorage → 복원 (첫 방문이면 기본 15종목 시드).
     useWatchlistStore.getState().hydrate();
-    // 즐겨찾기는 로그인 사용자 데이터 → 로그인 시 복원, 비로그인/로그아웃 시 비움.
-    const syncFavorites = () => {
-      const fav = useFavoritesStore.getState();
-      if (getStoredSession()) fav.hydrate();
-      else fav.reset();
+    // 즐겨찾기·KIS 연동상태는 로그인 사용자 데이터 → 로그인 시 복원, 로그아웃 시 비움.
+    // KIS 회원이면 시세 리스트 기본 종목의 stockId(BE 캔들용)를 BE /stocks 로 채운다.
+    // (검색으로 담은 종목은 이미 stockId 보유 → missing 만 1회 조회.)
+    const enrichWatchlistStockIds = async () => {
+      const missing = useWatchlistStore
+        .getState()
+        .items.filter((i) => i.stockId == null);
+      if (missing.length === 0) return;
+      const resolved = await Promise.all(
+        missing.map(async (i) => {
+          try {
+            const hit = (await getStocks({ keyword: i.code })).find(
+              (s) => s.code === i.code,
+            );
+            return hit ? ([i.code, hit.stockId] as const) : null;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      const map: Record<string, number> = {};
+      for (const r of resolved) if (r) map[r[0]] = r[1];
+      if (Object.keys(map).length > 0) {
+        useWatchlistStore.getState().applyStockIds(map);
+      }
     };
-    syncFavorites();
-    return onAuthChange(syncFavorites);
+    const syncUserData = () => {
+      const fav = useFavoritesStore.getState();
+      if (getStoredSession()) {
+        fav.hydrate();
+        void useKisStore
+          .getState()
+          .hydrate()
+          .then(() => {
+            if (useKisStore.getState().connected)
+              void enrichWatchlistStockIds();
+          });
+      } else {
+        fav.reset();
+        useKisStore.getState().reset();
+      }
+    };
+    syncUserData();
+    return onAuthChange(syncUserData);
   }, []);
 
   const panelRegistry: Record<string, (tab: MockTab) => ReactNode> = {
