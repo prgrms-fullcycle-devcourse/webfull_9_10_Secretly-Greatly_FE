@@ -6,7 +6,7 @@ import { createPosition, usePositionsStore } from "@/entities/position";
 import { useFavoritesStore } from "@/features/favorites";
 import { useWatchlistStore } from "@/features/watchlist";
 import { getStocks } from "@/features/stocks";
-import { getStoredSession } from "@/shared/api";
+import { useAuthStore } from "@/features/auth/model";
 
 interface SearchOptions {
   caseSensitive: boolean;
@@ -208,7 +208,7 @@ export function SearchView() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(false);
   // 보유추가·즐겨찾기 쓰기는 로그인 사용자만 (검색 자체는 비로그인도 가능).
-  const [isGuest] = useState(() => getStoredSession() == null);
+  const isGuest = !useAuthStore((s) => s.isAuthenticated);
 
   // 즐겨찾기 공유 스토어 — ★ 버튼이 즐겨찾기 트리·시트와 동기화.
   const favoriteItems = useFavoritesStore((s) => s.items);
