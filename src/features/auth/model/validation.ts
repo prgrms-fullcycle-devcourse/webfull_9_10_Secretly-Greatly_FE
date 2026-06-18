@@ -34,6 +34,18 @@ export function validateLogin({ email, password }: LoginRequest): LoginErrors {
   return errors;
 }
 
+/** 비밀번호 찾기 입력 검증 — 이메일 형식 + 필수값만. */
+export function validateResetRequest(email: string): LoginErrors {
+  const errors: LoginErrors = {};
+  const trimmedEmail = email.trim();
+
+  if (!trimmedEmail) errors.email = "이메일을 입력해주세요.";
+  else if (!EMAIL_RE.test(trimmedEmail))
+    errors.email = "올바른 이메일 형식이 아닙니다.";
+
+  return errors;
+}
+
 /** 비밀번호 규칙 검증 — 통과 시 null, 위반 시 메시지. (회원가입·비밀번호 변경 공용) */
 export function validatePassword(password: string): string | null {
   if (password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {

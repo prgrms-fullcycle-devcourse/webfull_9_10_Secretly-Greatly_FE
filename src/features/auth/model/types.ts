@@ -44,3 +44,13 @@ export interface ChangePasswordRequest {
 export interface ChangePasswordResult {
   passwordUpdated: boolean;
 }
+
+/** 비밀번호 찾기(임시 비밀번호 발송) 요청 바디 (BE PasswordResetRequestDto). */
+export interface PasswordResetRequest {
+  email: string;
+}
+
+/** 임시 비밀번호 발송 응답 data. */
+export interface PasswordResetResult {
+  mailSent: boolean;
+}

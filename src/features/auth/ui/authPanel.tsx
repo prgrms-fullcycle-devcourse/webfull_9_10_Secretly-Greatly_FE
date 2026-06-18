@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { login, signup } from "../api";
+import { login, requestPasswordReset, signup } from "../api";
 import {
   hasErrors,
   PASSWORD_MAX,
   useAuthStore,
   validateLogin,
+  validateResetRequest,
   validateSignup,
   type LoginResult,
   type SignupErrors,
@@ -37,9 +38,9 @@ const MODE_COPY: Record<
     submit: "회원가입",
   },
   reset: {
-    title: "비밀번호 재설정",
-    description: "가입한 이메일로 비밀번호 재설정 링크를 보내드립니다.",
-    submit: "재설정 링크 보내기",
+    title: "비밀번호 찾기",
+    description: "가입한 이메일로 임시 비밀번호를 보내드립니다.",
+    submit: "임시 비밀번호 받기",
   },
 };
 
@@ -90,6 +91,9 @@ export function AuthPanel({
     setMode(next);
     setErrors({});
     setNotice(null);
+    // 모드 전환 시 비번 입력은 비운다 (이전 화면에 친 값이 남지 않도록).
+    setPassword("");
+    setCheckPassword("");
   };
 
   const errorMessage = (err: unknown, fallback: string) => {
@@ -139,8 +143,6 @@ export function AuthPanel({
         password,
         checkPassword,
       });
-      setPassword("");
-      setCheckPassword("");
       switchMode("login");
       setNotice({
         type: "success",
@@ -156,13 +158,37 @@ export function AuthPanel({
     }
   };
 
+  const handleReset = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const nextErrors = validateResetRequest(normalizedEmail);
+    setErrors(nextErrors);
+    if (hasErrors(nextErrors)) return;
+
+    setLoading(true);
+    try {
+      const message = await requestPasswordReset({ email: normalizedEmail });
+      switchMode("login");
+      setNotice({ type: "success", text: message });
+    } catch (err) {
+      setNotice({
+        type: "error",
+        text: errorMessage(
+          err,
+          "임시 비밀번호 발송에 실패했습니다. 이메일을 확인해주세요.",
+        ),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (loading) return; // Enter 연타 등 중복 제출 방어
     setNotice(null);
     if (mode === "login") await handleLogin();
     else if (mode === "signup") await handleSignup();
-    // reset 모드는 BE 엔드포인트 미구현 — 연결 시 확장.
+    else if (mode === "reset") await handleReset();
   };
 
   return (
