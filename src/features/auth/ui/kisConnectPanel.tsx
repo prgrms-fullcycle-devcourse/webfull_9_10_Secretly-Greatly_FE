@@ -8,6 +8,8 @@ import {
   type FormEvent,
 } from "react";
 import { Codicon } from "@/shared/ui";
+import { KisConnectedBadge } from "./kisConnectedBadge";
+import { useKisStore } from "../model/kisStore";
 import {
   getKisCredentialStatus,
   registerKisCredential,
@@ -93,6 +95,8 @@ export function KisConnectPanel({ onClose }: { onClose: () => void }) {
         appSecret: secret,
       });
       setStatus(result);
+      // 전역 KIS 연동상태 갱신 — 계정 앞부분 뱃지·차트 분기가 연동 직후 바로 반영되도록.
+      void useKisStore.getState().hydrate();
       setAppKey("");
       setAppSecret("");
     } catch (err) {
@@ -142,20 +146,10 @@ export function KisConnectPanel({ onClose }: { onClose: () => void }) {
   if (status?.registered) {
     return (
       <div className="auth-panel__fields">
-        <div className="mt-1 rounded-sm border border-vscode-border-input px-3 py-3 text-[13px]">
-          <div className="flex items-center gap-1.5 text-(--chart-up)">
-            <Codicon icon="codicon-check" size={14} />
-            <span>KIS 연동됨</span>
-          </div>
-          <div className="mt-1.5 text-[12px] text-vscode-fg-desc">
-            appKey {status.maskedAppKey}
-          </div>
-          {status.registeredAt && (
-            <div className="text-[11px] text-vscode-fg-desc">
-              등록일 {new Date(status.registeredAt).toLocaleString("ko-KR")}
-            </div>
-          )}
-        </div>
+        <KisConnectedBadge
+          maskedAppKey={status.maskedAppKey}
+          registeredAt={status.registeredAt}
+        />
         <p className="text-[11px] text-vscode-fg-desc">
           장중(평일 09~15시)에 관심 종목 시세가 자동 수집됩니다.
         </p>

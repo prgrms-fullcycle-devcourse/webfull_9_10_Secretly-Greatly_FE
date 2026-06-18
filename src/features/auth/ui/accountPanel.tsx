@@ -12,7 +12,9 @@ import {
 import { AuthField } from "./authField";
 import { AuthNotice, type AuthNoticeState } from "./authNotice";
 import { KisConnectPanel } from "./kisConnectPanel";
+import { KisConnectedBadge } from "./kisConnectedBadge";
 import { SECONDARY_BUTTON } from "./secondaryButton";
+import { useKisStore } from "../model/kisStore";
 
 /** 비밀번호 규칙 안내 (BE 정합: 8~16자 · @$!%*#?&). */
 const PASSWORD_HINT = "영문·숫자·특수문자(@$!%*#?&) · 8~16자";
@@ -136,6 +138,7 @@ export function AccountPanel({
   const storeEmail = useAuthStore((s) => s.email);
   const storeNickname = useAuthStore((s) => s.nickname);
   const clear = useAuthStore((s) => s.clear);
+  const kisConnected = useKisStore((s) => s.connected);
   const [changing, setChanging] = useState(false);
   const [kisOpen, setKisOpen] = useState(false);
   const [profile, setProfile] = useState<MeResult | null>(null);
@@ -174,6 +177,9 @@ export function AccountPanel({
           </div>
         </div>
       </div>
+
+      {/* KIS 연동 상태 — 연동돼 있으면 계정 앞부분에도 표시 (kisConnectPanel 과 공통 뱃지). */}
+      {kisConnected && <KisConnectedBadge />}
 
       {changing ? (
         <ChangePasswordForm
