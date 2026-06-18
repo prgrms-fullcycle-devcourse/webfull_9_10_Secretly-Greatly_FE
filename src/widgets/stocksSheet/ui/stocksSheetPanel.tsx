@@ -48,15 +48,13 @@ interface StocksSheetPanelProps {
 }
 
 type MarketKey = "ALL" | "DOMESTIC" | "OVERSEAS";
-// "default" = 등록순(원본 순서 유지, 정렬 안 함).
 type SortKey = "default" | "price" | "volume" | "change";
 
 interface StockRow {
+  stockId: number;
   code: string;
   name: string;
-  /** native 통화 기준 현재가 (표시 통화 변환은 렌더에서). 미적재 시 null. */
   priceRaw: number | null;
-  /** 기간별 등락률(%) — 분봉 토글로 골라 표시. 미적재/장마감이면 null → "—". */
   pctDay: number | null;
   pct15m: number | null;
   pct30m: number | null;
@@ -77,24 +75,27 @@ const SORT_OPTIONS: ReadonlyArray<SelectOption<SortKey>> = [
   { value: "change", label: "등락률" },
 ];
 
-/** 정렬 선택을 새 탭(패널 remount) 사이에 유지 — 모듈 변수(브라우저 재시작엔 초기화, localStorage 불필요). */
 let lastSortKey: SortKey = "default";
 
-/** 미적재 시세 표시값 — 정렬에서는 항상 맨 아래로 보낸다. */
 const NO_VALUE = "—";
-
-/** 시세 자동 갱신 주기 (초). 로그인 무관하게 이 간격으로 재조회 + 카운트다운. */
 const REFRESH_SEC = 5;
 
-/** 직전 시세 모듈 캐시 — 탭 전환으로 패널이 remount 돼도 즉시 보여줘 "불러오는 중" 깜빡임 방지. */
 let cachedRows: StockRow[] = [];
 
-/** Yahoo 시세(숫자) → 시트 표시용 StockRow. 기간별 등락률은 렌더에서 분봉 토글로 고른다. */
+function resolveStockKey(code: string): number {
+  const STOCK_KEY_BY_CODE: Record<string, number> = {
+    "005930": 1,
+  };
+
+  return STOCK_KEY_BY_CODE[code] ?? 0;
+}
+
 function toYahooRow(
   stock: WatchlistItem,
   quote: MarketQuote | undefined,
 ): StockRow {
   return {
+    stockId: resolveStockKey(stock.code),
     code: stock.code,
     name: stock.name,
     market: stock.market,
@@ -106,7 +107,6 @@ function toYahooRow(
   };
 }
 
-/** 분봉 토글 → 그 기간의 등락률(%). 기본 "일간"=전일 종가 대비(표준). 데이터 없으면 null. */
 function pctForTimeframe(row: StockRow, timeframe: Timeframe): number | null {
   switch (timeframe) {
     case "일간":
@@ -118,7 +118,6 @@ function pctForTimeframe(row: StockRow, timeframe: Timeframe): number | null {
   }
 }
 
-/** 등락률(%) → 표시 문자열 (+부호·소수 2자리). null 이면 "—". */
 function formatPct(pct: number | null): string {
   return pct == null ? NO_VALUE : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
 }
@@ -135,8 +134,6 @@ function getSortValue(
   rate: number,
   timeframe: Timeframe,
 ): number {
-  // 미적재는 정렬에서 항상 맨 아래 (등락률 음수보다도 아래로).
-  // price 는 표시 통화로 변환해 비교 → 시장 섞여도(원/달러) 정렬이 일관됨.
   if (sortKey === "price") {
     return stock.priceRaw == null
       ? Number.NEGATIVE_INFINITY
@@ -147,16 +144,16 @@ function getSortValue(
           rate,
         );
   }
+
   if (sortKey === "volume") {
     return stock.volume === NO_VALUE
       ? Number.NEGATIVE_INFINITY
       : parseVolume(stock.volume);
   }
-  // 등락률은 현재 선택된 분봉 기준으로 정렬 (표시값과 일치).
+
   return pctForTimeframe(stock, timeframe) ?? Number.NEGATIVE_INFINITY;
 }
 
-/** 코드처럼 보이되 필드가 세로로 정렬되도록 한 줄 = 4컬럼 그리드 (name·price·change·volume). */
 const CODE_COLS = "minmax(0,260px) 150px 140px auto";
 
 function LineNumber({ value }: { value: number }) {
@@ -179,9 +176,7 @@ function CodeLine({
   children: React.ReactNode;
   onClick?: () => void;
   selected?: boolean;
-  /** 값이 바뀐 행 — 배경 플래시 1회. */
   flash?: boolean;
-  /** 플래시 애니메이션 종료 시 (다음 플래시 재발동 위해 상태에서 제거). */
   onFlashEnd?: () => void;
 }) {
   return (
@@ -210,7 +205,6 @@ function CodeLine({
   );
 }
 
-/** 한 필드: `key: value,` — key/구두점은 기본색, 값만 강조. 셀은 truncate로 정렬 유지. */
 function Field({
   name,
   value,
@@ -238,35 +232,27 @@ export function StocksSheetPanel({
   onSelectStock,
   selectedCode,
 }: StocksSheetPanelProps) {
-  // 정렬은 모듈 변수에서 복원 → 새 탭으로 remount 돼도 직전 선택 유지. 기본은 등록순.
   const [sortKey, setSortKey] = useState<SortKey>(() => lastSortKey);
-  // 선택이 바뀌면 모듈 변수에 보관(렌더 중이 아니라 effect 에서). 다음 remount 때 복원된다.
+
   useEffect(() => {
     lastSortKey = sortKey;
   }, [sortKey]);
-  // activeMarket 초기값은 파일명 기준. 탭 전환 시 갱신은 ideShell 의 key={tab.id}
-  // (패널 remount)로 처리한다 — effect 내 setState 는 프로젝트 lint 금지(set-state-in-effect).
+
   const [activeMarket, setActiveMarket] = useState<MarketKey>(() =>
     getMarketFromFilename(filename),
   );
-  // 캐시가 있으면 remount 시 즉시 표시 (깜빡임 방지), 백그라운드로 조용히 재조회.
   const [allRows, setAllRows] = useState<StockRow[]>(() => cachedRows);
   const [loading, setLoading] = useState(() => cachedRows.length === 0);
   const [error, setError] = useState(false);
-  // 로그인 여부는 마운트 시 1회만 확인 (세션 없으면 비로그인 = Yahoo 시세 + 읽기전용).
   const [isGuest] = useState(() => getStoredSession() == null);
-  // 직전 가격(코드별) — 갱신 때 비교해 바뀐 행만 플래시.
   const prevPricesRef = useRef<Map<string, number | null>>(new Map());
-  // 이번 갱신에서 값이 바뀌어 배경 플래시 중인 코드들.
   const [flashCodes, setFlashCodes] = useState<Set<string>>(new Set());
-  // 시세 리스트 종목 = 사용자 관심목록(검색 북마크로 가감). 초기값은 기본 15종목.
   const watchlist = useWatchlistStore((s) => s.items);
 
-  // 자동 갱신 카운트다운 + 폴링 (공통 훅). 0이 되면 Yahoo 시세 재조회 → 바뀐 행만 플래시.
-  // 시세는 로그인 무관 Yahoo(실데이터). 관심목록이 바뀌면 restartKey 가 바뀌어 즉시 재조회.
   const secondsLeft = useRefreshCountdown(
     (isActive) => {
       const symbols = watchlist.map((s) => toYahooSymbol(s.code, s.market));
+
       getMarketQuotes(symbols)
         .then((quotes) =>
           watchlist.map((s, i) =>
@@ -278,24 +264,29 @@ export function StocksSheetPanel({
         )
         .then((rows) => {
           if (!isActive()) return;
-          // 직전 가격과 비교 → 바뀐 코드만 플래시 (첫 로드는 비교 대상 없어 플래시 X).
+
           const prev = prevPricesRef.current;
           const changed = new Set<string>();
           const next = new Map<string, number | null>();
-          for (const r of rows) {
-            const before = prev.get(r.code);
-            if (before !== undefined && before !== r.priceRaw)
-              changed.add(r.code);
-            next.set(r.code, r.priceRaw);
+
+          for (const row of rows) {
+            const before = prev.get(row.code);
+            if (before !== undefined && before !== row.priceRaw) {
+              changed.add(row.code);
+            }
+            next.set(row.code, row.priceRaw);
           }
+
           prevPricesRef.current = next;
           cachedRows = rows;
           setAllRows(rows);
           setError(false);
-          if (changed.size) setFlashCodes((p) => new Set([...p, ...changed]));
+
+          if (changed.size) {
+            setFlashCodes((previous) => new Set([...previous, ...changed]));
+          }
         })
         .catch(() => {
-          // 폴링 중 일시 오류는 직전 데이터 유지 (빈 화면 깜빡임 방지).
           if (isActive()) setError(true);
         })
         .finally(() => {
@@ -311,31 +302,37 @@ export function StocksSheetPanel({
   const currency = useCurrencyStore((s) => s.currency);
   const usdKrw = useFxStore((s) => s.usdKrw);
   const timeframe = useTimeframeStore((s) => s.timeframe);
-  const isFavorite = (code: string) =>
-    favoriteItems.some((f) => f.code === code);
   const positions = usePositionsStore((state) => state.positions);
   const addPosition = usePositionsStore((state) => state.addPosition);
   const removePosition = usePositionsStore((state) => state.removePosition);
-  const isHeld = (code: string) => positions.some((p) => p.id === code);
+
+  const isFavorite = (code: string) =>
+    favoriteItems.some((favorite) => favorite.code === code);
+
+  const isHeld = (code: string) =>
+    positions.some((position) => position.id === code);
+
   const toggleHeld = (stock: StockRow) => {
     if (isHeld(stock.code)) {
       removePosition(stock.code);
-    } else {
-      addPosition(
-        createPosition({
-          code: stock.code,
-          name: stock.name,
-          market: stock.market,
-          price: stock.priceRaw,
-        }),
-      );
+      return;
     }
+
+    addPosition(
+      createPosition({
+        code: stock.code,
+        name: stock.name,
+        market: stock.market,
+        price: stock.priceRaw,
+      }),
+    );
   };
+
   const filteredStocks =
     activeMarket === "ALL"
       ? allRows
       : allRows.filter((stock) => stock.market === activeMarket);
-  // 등록순(default)은 원본 순서 유지, 그 외는 선택 기준으로 정렬.
+
   const stocks =
     sortKey === "default"
       ? filteredStocks
@@ -344,12 +341,12 @@ export function StocksSheetPanel({
             getSortValue(b, sortKey, currency, usdKrw, timeframe) -
             getSortValue(a, sortKey, currency, usdKrw, timeframe),
         );
+
   const title = activeMarket === "ALL" ? "전체" : activeMarket;
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-vscode-editor font-sans text-vscode-fg">
       <div className="flex shrink-0 flex-col gap-2 border-b border-vscode-border-panel px-[14px] py-2">
-        {/* 툴바 행 — 화면 좁으면 wrap (flex 한 줄 강제 X). */}
         <div className="flex flex-wrap items-center gap-x-[14px] gap-y-2">
           <SegmentFilter
             options={MARKET_OPTIONS}
@@ -357,7 +354,6 @@ export function StocksSheetPanel({
             onValueChange={setActiveMarket}
           />
 
-          {/* 정렬 — 차트 봉 단위와 동일한 셀렉트 디자인. */}
           <Select
             options={SORT_OPTIONS}
             value={sortKey}
@@ -367,14 +363,11 @@ export function StocksSheetPanel({
 
           <div className="ml-auto flex items-center gap-2.5">
             <RefreshCountdown seconds={secondsLeft} />
-
-            {/* 분봉 — 등락률을 어느 기간으로 볼지 (일간 기본=표준). 공유 store, 상세도 같이 반영. */}
             <TimeframeToggle />
             <CurrencyToggle />
           </div>
         </div>
 
-        {/* 비로그인 안내 — 좁은 화면에서 깨지지 않도록 툴바 아래 줄로 분리. */}
         {isGuest && (
           <span className="text-[11px] text-vscode-fg-desc">
             로그인하면 ★ 즐겨찾기를 쓸 수 있어요.
@@ -419,8 +412,8 @@ export function StocksSheetPanel({
             selected={selectedCode === stock.code}
             flash={flashCodes.has(stock.code)}
             onFlashEnd={() =>
-              setFlashCodes((p) => {
-                const next = new Set(p);
+              setFlashCodes((previous) => {
+                const next = new Set(previous);
                 next.delete(stock.code);
                 return next;
               })
@@ -472,7 +465,6 @@ export function StocksSheetPanel({
                 />
               </div>
 
-              {/* +보유추가(물타기)는 로그인 무관, ★즐겨찾기는 로그인 사용자만. */}
               <span className="ml-auto flex shrink-0 items-center gap-1.5 pl-3 pr-1">
                 <IconButton
                   variant="search"
@@ -493,6 +485,7 @@ export function StocksSheetPanel({
                   }
                   className="h-4 w-4"
                 />
+
                 {!isGuest && (
                   <IconButton
                     variant="search"

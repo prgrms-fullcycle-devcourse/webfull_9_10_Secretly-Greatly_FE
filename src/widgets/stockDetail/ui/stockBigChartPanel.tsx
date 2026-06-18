@@ -8,12 +8,14 @@ import {
   useRefreshCountdown,
 } from "@/shared/lib";
 import { useCurrencyStore, useFxStore } from "@/features/currency";
+import { useKisStore } from "@/features/auth/model/kisStore";
 import {
   getCandles,
   getMarketQuotes,
   toYahooSymbol,
   type MarketQuote,
 } from "@/features/stocks";
+import { getStockCandles } from "@/features/stocks/api";
 import type { StockSummary } from "../model/types";
 import { candlesToChartData, type ChartData } from "../model/chartData";
 import { PriceChart, type ChartType } from "./priceChart";
@@ -34,6 +36,7 @@ const MINUTE_OPTIONS: ReadonlyArray<CapsuleToggleOption<string>> = [
   { value: "30m", label: "30분" },
   { value: "60m", label: "1시간" },
 ];
+
 const UNIT_OPTIONS: ReadonlyArray<CapsuleToggleOption<string>> = [
   { value: "1d", label: "일" },
   { value: "1wk", label: "주" },
@@ -61,6 +64,16 @@ const MA_PERIODS = [5, 20, 60, 120];
 /** 차트 자동 갱신 주기 (초) — 시세 리스트와 같은 주기 + 카운트다운. */
 const REFRESH_SEC = 5;
 
+const BE_SUPPORTED_INTERVALS = new Set(["1d", "1wk", "1mo"]);
+
+const LIMIT_BY_INTERVAL: Record<string, number> = {
+  "1d": 250,
+  "1wk": 250,
+  "1mo": 250,
+};
+
+type BeCandleInterval = "1d" | "1wk" | "1mo";
+
 export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
   const [interval, setInterval] = useState("15m");
   // 드롭다운에 보일 분 단위 라벨용 — 일/주/월을 골라도 마지막 분 단위를 기억.
@@ -71,21 +84,47 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [quote, setQuote] = useState<MarketQuote | null>(null);
   const [error, setError] = useState(false);
+
   const currency = useCurrencyStore((s) => s.currency);
   const usdKrw = useFxStore((s) => s.usdKrw);
+  const kisConnected = useKisStore((s) => s.connected);
 
   const symbol = toYahooSymbol(stock.code, stock.market);
+  const shouldUseBeCandles =
+    kisConnected &&
+    Boolean(stock.stockId) &&
+    BE_SUPPORTED_INTERVALS.has(interval);
 
-  // 자동 갱신 폴링 (공통 훅). 종목/주기 바뀌면 즉시 재조회. 큰 차트는 카운트다운 표시 없이 폴링만.
+  // 자동 갱신 폴링 (공통 훅). 종목/주기 바뀌면 즉시 재조회.
+  // KIS 연동 + BE 지원 interval(일/주/월)은 BE 캔들 API를 우선 사용하고,
+  // 비KIS/분봉/BE 실패·403은 Yahoo 캔들로 폴백한다.
   useRefreshCountdown(
     (isActive) => {
-      Promise.all([getCandles(symbol, interval), getMarketQuotes([symbol])])
+      const fetchCandles = async () => {
+        try {
+          if (shouldUseBeCandles) {
+            return await getStockCandles(
+              stock.stockId,
+              interval as BeCandleInterval,
+              LIMIT_BY_INTERVAL[interval] ?? 250,
+            );
+          }
+
+          return await getCandles(symbol, interval);
+        } catch {
+          return await getCandles(symbol, interval);
+        }
+      };
+
+      Promise.all([fetchCandles(), getMarketQuotes([symbol])])
         .then(([candles, quotes]) => {
           if (!isActive()) return;
+
           if (candles.length === 0) {
             setError(true);
             return;
           }
+
           setChartData(candlesToChartData(candles));
           setQuote(quotes[0] ?? null);
           setError(false);
@@ -94,25 +133,31 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
           if (isActive()) setError(true);
         });
     },
-    `${symbol}:${interval}`,
+    `${symbol}:${stock.stockId}:${interval}:${shouldUseBeCandles}`,
     REFRESH_SEC,
   );
 
   const last = chartData?.candles.at(-1);
   const up = last ? last.close >= (chartData?.baseValue ?? last.close) : true;
   const activeType =
-    CHART_TYPE_OPTIONS.find((o) => o.type === chartType) ??
+    CHART_TYPE_OPTIONS.find((option) => option.type === chartType) ??
     CHART_TYPE_OPTIONS[0];
+
   // 분 단위가 활성일 때만 드롭다운 강조. 라벨은 마지막으로 고른 분 단위를 보여준다.
-  const minuteActive = MINUTE_OPTIONS.some((o) => o.value === interval);
+  const minuteActive = MINUTE_OPTIONS.some(
+    (option) => option.value === interval,
+  );
   const minuteLabel = (
-    MINUTE_OPTIONS.find((o) => o.value === lastMinute) ?? MINUTE_OPTIONS[0]
+    MINUTE_OPTIONS.find((option) => option.value === lastMinute) ??
+    MINUTE_OPTIONS[0]
   ).label;
+
   const pickMinute = (value: string) => {
     setInterval(value);
     setLastMinute(value);
     setIntervalMenuOpen(false);
   };
+
   // 헤더 금액 — 선택 통화(강조) + 반대 통화(보조) 둘 다 표시.
   const otherCurrency = currency === "USD" ? "KRW" : "USD";
   const changePct =
@@ -133,6 +178,7 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
               {stock.code}
             </span>
           </div>
+
           {/* 2행: 선택 통화 금액(강조) + 반대 통화 금액(보조) + 등락률 */}
           {quote?.price != null && (
             <div className="mt-1 flex items-baseline gap-2">
@@ -154,7 +200,7 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
-          {/* 봉 단위 — 분 단위는 드롭다운, 일/주/월은 버튼 (트뷰식). Yahoo interval 제어. */}
+          {/* 봉 단위 — 분 단위는 드롭다운, 일/주/월은 버튼 (트뷰식). */}
           <div className="flex items-center gap-1.5">
             <div className="relative">
               <button
@@ -162,7 +208,7 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
                 aria-haspopup="menu"
                 aria-expanded={intervalMenuOpen}
                 title="봉 단위 (분)"
-                onClick={() => setIntervalMenuOpen((o) => !o)}
+                onClick={() => setIntervalMenuOpen((open) => !open)}
                 className={`flex h-6 cursor-pointer items-center gap-1 rounded-[3px] border border-vscode-border-input px-1.5 text-[12px] hover:bg-vscode-list-hover ${
                   minuteActive
                     ? "bg-vscode-list-active font-medium text-vscode-fg"
@@ -172,6 +218,7 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
                 <span>{minuteLabel}</span>
                 <Codicon icon="codicon-chevron-down" size={12} />
               </button>
+
               {intervalMenuOpen && (
                 <>
                   <button
@@ -187,6 +234,7 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
                   >
                     {MINUTE_OPTIONS.map((option) => {
                       const active = option.value === interval;
+
                       return (
                         <button
                           key={option.value}
@@ -210,7 +258,6 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
               )}
             </div>
 
-            {/* 일·주·월 — 공통 CapsuleToggle. 분 단위 활성 땐 아무것도 강조 안 됨(정상). */}
             <CapsuleToggle
               options={UNIT_OPTIONS}
               value={interval}
@@ -218,7 +265,7 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
             />
           </div>
 
-          {/* 차트 모양 — 우리 디자인 드롭다운 (캔들/바/라인/영역…). 봉 단위 뒤에 둔다. */}
+          {/* 차트 모양 — 우리 디자인 드롭다운 (캔들/바/라인/영역…). */}
           <div className="relative">
             <button
               type="button"
@@ -226,12 +273,13 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
               aria-expanded={menuOpen}
               aria-label={`차트 모양: ${activeType.label}`}
               title={`차트 모양: ${activeType.label}`}
-              onClick={() => setMenuOpen((o) => !o)}
+              onClick={() => setMenuOpen((open) => !open)}
               className="flex h-6 cursor-pointer items-center gap-1 rounded-[3px] border border-vscode-border-input bg-vscode-editor px-1.5 text-vscode-fg hover:bg-vscode-list-hover"
             >
               <Codicon icon={activeType.icon} size={15} />
               <Codicon icon="codicon-chevron-down" size={12} />
             </button>
+
             {menuOpen && (
               <>
                 <button
@@ -247,6 +295,7 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
                 >
                   {CHART_TYPE_OPTIONS.map((option) => {
                     const active = option.type === chartType;
+
                     return (
                       <button
                         key={option.type}

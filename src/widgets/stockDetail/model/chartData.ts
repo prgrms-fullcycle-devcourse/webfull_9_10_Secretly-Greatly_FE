@@ -5,7 +5,6 @@ import type {
   Time,
   UTCTimestamp,
 } from "lightweight-charts";
-import type { Candle } from "@/features/stocks";
 
 export const CHART_RANGES = ["1D", "1W", "1M", "3M", "1Y"] as const;
 export type ChartRange = (typeof CHART_RANGES)[number];
@@ -19,6 +18,15 @@ export interface ChartData {
   volume: HistogramData<Time>[];
   /** 베이스라인 기준값 = 첫 종가. */
   baseValue: number;
+}
+
+export interface OhlcvCandle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
 }
 
 /** 기간별 데이터 포인트 수 — 범위가 넓을수록 더 많은 봉. */
@@ -65,7 +73,6 @@ export function buildChartData(
     const wave =
       Math.sin(i * 0.34 + (seed % 17)) * 0.18 +
       Math.sin(i * 0.91 + (seed % 7)) * 0.08;
-    // up이면 우상향(값 증가)
     const trend = (up ? 1 : -1) * (t - 0.5) * 0.6;
     raw.push(trend + wave);
   }
@@ -73,10 +80,9 @@ export function buildChartData(
   const min = Math.min(...raw);
   const max = Math.max(...raw);
   const span = max - min || 1;
-  // 현재가 기준 약 90% ~ 106% 밴드로 정규화
   const closes = raw.map((v) => base * (0.9 + ((v - min) / span) * 0.16));
-  // 마지막 종가가 현재가와 정확히 일치하도록 평행 이동
   const offset = base - closes[closes.length - 1];
+
   for (let i = 0; i < n; i++) closes[i] = Math.max(0, closes[i] + offset);
 
   const today = Math.floor(Date.now() / 1000 / DAY) * DAY;
@@ -91,6 +97,7 @@ export function buildChartData(
     const open = i === 0 ? close * (1 - (rand() - 0.5) * 0.01) : closes[i - 1];
     const high = Math.max(open, close) * (1 + rand() * 0.006);
     const low = Math.min(open, close) * (1 - rand() * 0.006);
+
     return {
       time: at(i),
       open: Math.max(0, open),
@@ -100,7 +107,6 @@ export function buildChartData(
     };
   });
 
-  // 거래량 — 평소 변동 + 가끔 스파이크 (seed 기반)
   const volume: HistogramData<Time>[] = closes.map((_, i) => {
     const spike = rand() > 0.88 ? 1.8 + rand() : 1;
     return { time: at(i), value: (0.4 + rand()) * 6e8 * spike };
@@ -109,27 +115,28 @@ export function buildChartData(
   return { line, candles, volume, baseValue: closes[0] };
 }
 
-/** Yahoo 캔들(OHLCV) → Lightweight Charts ChartData. 시각은 unix seconds = UTCTimestamp. */
-export function candlesToChartData(candles: Candle[]): ChartData {
-  const line: LineData<Time>[] = [];
-  const candleData: CandlestickData<Time>[] = [];
-  const volume: HistogramData<Time>[] = [];
-  for (const c of candles) {
-    const time = c.time as UTCTimestamp;
-    line.push({ time, value: c.close });
-    candleData.push({
-      time,
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-    });
-    volume.push({ time, value: c.volume });
-  }
+/** Yahoo/BE 캔들(OHLCV) → Lightweight Charts ChartData */
+export function candlesToChartData(candles: OhlcvCandle[]): ChartData {
+  const sortedCandles = [...candles].sort((a, b) => a.time - b.time);
+
   return {
-    line,
-    candles: candleData,
-    volume,
-    baseValue: candles[0]?.close ?? 0,
+    line: sortedCandles.map((candle) => ({
+      time: candle.time as UTCTimestamp,
+      value: candle.close,
+    })),
+    candles: sortedCandles.map((candle) => ({
+      time: candle.time as UTCTimestamp,
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+    })),
+    volume: sortedCandles.map((candle) => ({
+      time: candle.time as UTCTimestamp,
+      value: candle.volume,
+    })),
+    baseValue: sortedCandles[0]?.close ?? 0,
   };
 }
+
+export const convertCandlesToChartData = candlesToChartData;
