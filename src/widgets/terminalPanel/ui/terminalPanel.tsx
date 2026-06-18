@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Codicon, Divider, IconButton, Input } from "@/shared/ui";
-import { TerminalAlertStream } from "./terminalAlertStream";
+import { TerminalAlertStream, type TerminalLog } from "./terminalAlertStream";
+import { mapAlertToLog, formatTime } from "./mapAlertToLog";
+import { useAlertStream } from "../model";
 
 type PanelTab = "PROBLEMS" | "OUTPUT" | "DEBUG CONSOLE" | "TERMINAL" | "PORTS";
 
@@ -147,6 +149,68 @@ const PANEL_TABS: PanelTab[] = [
   "PORTS",
 ];
 
+/**
+ * TERMINAL 탭 본문 — 실시간 급변 알림 스트림.
+ *
+ * 로그인 시 Stream 소켓(`useAlertStream`)에 붙어 실데이터를 주입(제어 모드)하고,
+ * 미로그인 시에는 데이터를 받을 수 없으므로 로그인 안내 줄만 표시한다.
+ * 연결 상태(연결 중/연결됨)와 stream_error/연결 오류를 안내 줄로 노출한다.
+ */
+function TerminalTabContent() {
+  const { alerts, error, status, statusAt, isAuthed } = useAlertStream();
+
+  if (!isAuthed) {
+    return (
+      <TerminalAlertStream
+        logs={[
+          {
+            id: "stream-auth",
+            time: "",
+            level: "INFO",
+            label: "stream",
+            note: "로그인 후 실시간 급변 알림을 받을 수 있습니다.",
+          },
+        ]}
+      />
+    );
+  }
+
+  const logs: TerminalLog[] = [];
+  const statusTime = statusAt ? formatTime(statusAt) : "";
+
+  // 연결 상태 안내 줄 — 사용자가 "연결됨"을 인지할 수 있게.
+  if (status === "connecting") {
+    logs.push({
+      id: "stream-status",
+      time: statusTime,
+      level: "INFO",
+      label: "stream",
+      note: "실시간 알림 스트림에 연결 중…",
+    });
+  } else if (status === "connected") {
+    logs.push({
+      id: "stream-status",
+      time: statusTime,
+      level: "INFO",
+      label: "stream",
+      note: "실시간 급변 알림 스트림에 연결되었습니다. 급변 발생 시 여기에 표시됩니다.",
+    });
+  }
+
+  for (const alert of alerts) logs.push(mapAlertToLog(alert));
+
+  if (error) {
+    logs.push({
+      id: "stream-error",
+      time: statusTime,
+      level: "CRITICAL",
+      label: "stream",
+      note: error,
+    });
+  }
+  return <TerminalAlertStream logs={logs} />;
+}
+
 interface PanelAreaProps {
   height: number;
 }
@@ -251,7 +315,7 @@ export function PanelArea({ height }: PanelAreaProps) {
             </div>
           </div>
         )}
-        {activeTab === "TERMINAL" && <TerminalAlertStream />}
+        {activeTab === "TERMINAL" && <TerminalTabContent />}
         {activeTab === "PORTS" && (
           <div className="text-vscode-fg-desc text-[13px]">
             No forwarded ports. Forward a port to access your locally running
