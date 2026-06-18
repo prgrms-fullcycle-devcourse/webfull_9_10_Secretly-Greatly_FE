@@ -53,6 +53,8 @@ interface WatchlistState {
   /** 있으면 제거, 없으면 추가 (검색 북마크 토글). */
   toggle: (item: WatchlistItem) => void;
   remove: (code: string) => void;
+  /** stockId 없는 종목에 BE stockId(code→stockId 맵) 채움. 로컬 저장도 갱신. */
+  applyStockIds: (map: Record<string, number>) => void;
 }
 
 /**
@@ -81,6 +83,19 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
   },
   remove: (code) => {
     const next = get().items.filter((i) => i.code !== code);
+    write(next);
+    set({ items: next });
+  },
+  applyStockIds: (map) => {
+    let changed = false;
+    const next = get().items.map((i) => {
+      if (i.stockId == null && map[i.code] != null) {
+        changed = true;
+        return { ...i, stockId: map[i.code] };
+      }
+      return i;
+    });
+    if (!changed) return;
     write(next);
     set({ items: next });
   },
