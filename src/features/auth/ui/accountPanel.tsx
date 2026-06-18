@@ -178,8 +178,8 @@ export function AccountPanel({
         </div>
       </div>
 
-      {/* KIS 연동 상태 — 연동돼 있으면 계정 앞부분에도 표시 (kisConnectPanel 과 공통 뱃지). */}
-      {kisConnected && <KisConnectedBadge />}
+      {/* KIS 연동 상태 — 랜딩(기본)에서만. KIS 연동 화면은 자체 상세 뱃지가 있어 중복 방지. */}
+      {!changing && !kisOpen && kisConnected && <KisConnectedBadge />}
 
       {changing ? (
         <ChangePasswordForm

@@ -141,6 +141,9 @@ export function IdeShell({
     useState(true);
   const [secondarySidebarWidth, setSecondarySidebarWidth] = useState(360);
   const [selectedStock, setSelectedStock] = useState<StockSummary | null>(null);
+  // 즐겨찾기로 연 상세는 이 차트 탭과 한 묶음 — 둘 중 하나 닫으면 같이 닫힌다.
+  // null = 시세시트에서 연 독립 상세(차트와 따로 움직임).
+  const [bundledChartTab, setBundledChartTab] = useState<string | null>(null);
   const [isAgentFullscreen, setIsAgentFullscreen] = useState(false);
   const [stockChartTabs, setStockChartTabs] = useState<
     Record<string, StockSummary>
@@ -211,7 +214,11 @@ export function IdeShell({
       <StocksSheetPanel
         key={tab.id}
         filename={tab.filename}
-        onSelectStock={setSelectedStock}
+        onSelectStock={(s) => {
+          // 시세시트 상세는 차트와 독립 — 묶음 해제.
+          setSelectedStock(s);
+          setBundledChartTab(null);
+        }}
         selectedCode={selectedStock?.code ?? null}
       />
     ),
@@ -245,6 +252,9 @@ export function IdeShell({
         volume: "",
         market: fav.market,
       };
+      // 즐겨찾기 = 상세 + 큰 차트 탭을 한 묶음으로 연다 (둘 중 하나 닫으면 같이 닫힘).
+      setSelectedStock(summary);
+      setBundledChartTab(`stock-big-chart-${summary.code}`);
       handleOpenBigChart(summary);
       return;
     }
@@ -266,6 +276,12 @@ export function IdeShell({
       delete rest[id];
       return rest;
     });
+
+    // 묶음(즐겨찾기) 차트 탭이면 연결된 상세도 같이 닫는다.
+    if (id === bundledChartTab) {
+      setSelectedStock(null);
+      setBundledChartTab(null);
+    }
 
     if (nextTabs.length === 0) {
       setActiveEditorTabKey(null);
@@ -296,11 +312,8 @@ export function IdeShell({
     setActiveEditorTabKey(tabKey);
   };
 
-  // 상세 패널은 활성 차트 탭 종목을 따라간다(차트 탭과 한 세트로 전환·종료).
-  // 활성 탭이 차트가 아니면(시세시트 등) 시트에서 고른 종목(selectedStock)을 보여준다.
-  const activeChartStock =
-    activeEditorTabKey != null ? stockChartTabs[activeEditorTabKey] : undefined;
-  const detailStock = activeChartStock ?? selectedStock;
+  // 상세 패널은 마지막 선택(selectedStock)만 따른다. 차트 탭과의 동시 종료는 bundledChartTab 로 처리.
+  const detailStock = selectedStock;
 
   const handleToggleAgentFullscreen = () => {
     setIsAgentFullscreen((prev) => {
@@ -525,10 +538,10 @@ export function IdeShell({
                       <StockDetailPanel
                         stock={detailStock}
                         onClose={() => {
-                          // 차트 탭에서 따라온 상세면 그 차트 탭을 닫고(세트로 종료),
-                          // 시트에서 고른 상세면 선택만 해제한다.
-                          if (activeChartStock && activeEditorTabKey) {
-                            handleCloseEditorTab(activeEditorTabKey);
+                          // 묶음(즐겨찾기)이면 연결된 차트 탭까지 닫고(상세는 그 안에서 해제),
+                          // 독립(시세시트)이면 상세만 해제한다.
+                          if (bundledChartTab) {
+                            handleCloseEditorTab(bundledChartTab);
                           } else {
                             setSelectedStock(null);
                           }

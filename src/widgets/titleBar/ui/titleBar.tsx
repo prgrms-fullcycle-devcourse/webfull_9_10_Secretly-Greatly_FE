@@ -1,7 +1,7 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
-import { VscodeIcon } from "@/shared/ui";
 
 import { MacWindowControls } from "./macWindowControls";
 import { WindowControls } from "./windowControls";
@@ -44,7 +44,14 @@ export function TitleBar({
           <MacWindowControls />
         ) : (
           <div className="w-[34px] h-full flex items-center justify-center shrink-0">
-            <VscodeIcon size={17} />
+            <Image
+              src="/icon.svg"
+              alt="Secretly Greatly"
+              width={17}
+              height={17}
+              unoptimized
+              className="h-[17px] w-[17px]"
+            />
           </div>
         )}
         <MenuBar />

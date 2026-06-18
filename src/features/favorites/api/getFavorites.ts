@@ -57,7 +57,8 @@ export async function getFavorites(): Promise<FavoriteListItem[]> {
     .sort((a, b) => a.displayOrder - b.displayOrder)
     .map((it) => ({
       code: it.ticker,
-      name: it.displayFileName,
+      // BE displayFileName 은 "종목명.json" 형태(파일 위장) → 확장자 떼고 종목명만 표시.
+      name: it.displayFileName.replace(/\.json$/i, ""),
       market: inferMarket(it.ticker),
       stockId: it.stockId,
       watchlistId: it.watchlistId,
