@@ -55,6 +55,8 @@ export function KisConnectPanel({ onClose }: { onClose: () => void }) {
   }, []);
 
   useEffect(() => {
+    // StrictMode 재마운트 시 ref 가 false 로 남아 응답을 무시하던 문제 방지.
+    mountedRef.current = true;
     loadStatus();
     return () => {
       mountedRef.current = false;
