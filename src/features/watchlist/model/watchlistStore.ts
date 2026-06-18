@@ -3,6 +3,7 @@ import type { Market } from "@/shared/lib";
 
 /** 시세 리스트(관심) 한 종목 — 검색에서 북마크로 가감한다. */
 export interface WatchlistItem {
+  stockId?: number;
   code: string;
   name: string;
   market: Market;

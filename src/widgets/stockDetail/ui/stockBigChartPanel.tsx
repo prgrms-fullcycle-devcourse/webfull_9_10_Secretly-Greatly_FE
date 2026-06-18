@@ -92,7 +92,7 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
   const symbol = toYahooSymbol(stock.code, stock.market);
   const shouldUseBeCandles =
     kisConnected &&
-    Boolean(stock.stockId) &&
+    stock.stockId != null &&
     BE_SUPPORTED_INTERVALS.has(interval);
 
   // 자동 갱신 폴링 (공통 훅). 종목/주기 바뀌면 즉시 재조회.
@@ -102,7 +102,7 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
     (isActive) => {
       const fetchCandles = async () => {
         try {
-          if (shouldUseBeCandles) {
+          if (shouldUseBeCandles && stock.stockId != null) {
             return await getStockCandles(
               stock.stockId,
               interval as BeCandleInterval,
