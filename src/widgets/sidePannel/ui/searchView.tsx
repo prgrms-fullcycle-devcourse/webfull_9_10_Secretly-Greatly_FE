@@ -15,6 +15,7 @@ interface SearchOptions {
 }
 
 interface StockResult {
+  stockId?: number;
   id: string;
   name: string;
   code: string;
@@ -247,6 +248,7 @@ export function SearchView() {
                     s.code.toLowerCase().startsWith(kw),
                 )
                 .map((s) => ({
+                  stockId: s.stockId,
                   id: s.code,
                   name: s.name,
                   code: s.code,
@@ -476,6 +478,7 @@ export function SearchView() {
                   onToggleAdded={() => toggleAdded(stock)}
                   onToggleBookmark={() =>
                     toggleWatchlist({
+                      stockId: stock.stockId,
                       code: stock.code,
                       name: stock.name,
                       market: stock.market,

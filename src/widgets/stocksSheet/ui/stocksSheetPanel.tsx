@@ -51,7 +51,7 @@ type MarketKey = "ALL" | "DOMESTIC" | "OVERSEAS";
 type SortKey = "default" | "price" | "volume" | "change";
 
 interface StockRow {
-  stockId: number;
+  stockId?: number;
   code: string;
   name: string;
   priceRaw: number | null;
@@ -82,20 +82,12 @@ const REFRESH_SEC = 5;
 
 let cachedRows: StockRow[] = [];
 
-function resolveStockKey(code: string): number {
-  const STOCK_KEY_BY_CODE: Record<string, number> = {
-    "005930": 1,
-  };
-
-  return STOCK_KEY_BY_CODE[code] ?? 0;
-}
-
 function toYahooRow(
   stock: WatchlistItem,
   quote: MarketQuote | undefined,
 ): StockRow {
   return {
-    stockId: resolveStockKey(stock.code),
+    stockId: stock.stockId,
     code: stock.code,
     name: stock.name,
     market: stock.market,
