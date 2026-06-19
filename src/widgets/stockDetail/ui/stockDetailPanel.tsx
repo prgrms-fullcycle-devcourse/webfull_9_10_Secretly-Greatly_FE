@@ -7,6 +7,7 @@ import {
   compact,
   compactKo,
   convertCurrency,
+  effectiveKrwRate,
   formatPrice,
   nativeCurrency,
   parseVolume,
@@ -21,9 +22,13 @@ import { useTimeframeStore, type Timeframe } from "@/features/timeframe";
 import { usePositionsStore } from "@/entities/position";
 import { useAddPositionModal } from "@/features/positions";
 import { useAuthStore } from "@/features/auth/model";
+import { useKisStore } from "@/features/auth/model/kisStore";
 import {
   getCandles,
   getMarketQuotes,
+  getStockCandles,
+  getStockQuotes,
+  stockQuoteToMarketQuote,
   toYahooSymbol,
   type Candle,
   type MarketQuote,
@@ -38,8 +43,8 @@ interface StockDetailPanelProps {
   onOpenBigChart?: (stock: StockSummary) => void;
 }
 
-/** 상세 시세 자동 갱신 주기 (ms) — 리스트와 같은 주기. */
-const REFRESH_MS = 5_000;
+/** 상세 시세 자동 갱신 주기 (ms) — KIS(30초 적재)·Yahoo(지연) 데이터라 30초. */
+const REFRESH_MS = 30_000;
 
 const MARKET_LABEL: Record<StockSummary["market"], string> = {
   DOMESTIC: "KOREA MARKET",
@@ -158,23 +163,43 @@ export function StockDetailPanel({
   const currency = useCurrencyStore((s) => s.currency);
   const usdKrw = useFxStore((s) => s.usdKrw);
   const timeframe = useTimeframeStore((s) => s.timeframe);
+  const kisConnected = useKisStore((s) => s.connected);
 
   const [quote, setQuote] = useState<MarketQuote | null>(null);
   const [candles, setCandles] = useState<Candle[] | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string>(() => nowTime());
 
   const symbol = toYahooSymbol(stock.code, stock.market);
+  // KIS 연동 + stockId 있으면 시세·1분봉 모두 BE(KIS), 아니면 Yahoo.
+  const stockID = stock.stockId;
+  const useBe = kisConnected && stockID != null;
 
-  // 라이브 시세 + 당일 1분봉 폴링 (종목 변경 시 재시작). effect 본문 동기 setState 없음(lint).
+  // 라이브 시세 + 당일 1분봉 폴링 (종목 변경 시 재시작).
+  // 시세·캔들을 독립 처리 — 한쪽이 실패해도 다른 쪽은 갱신된다(큰 차트와 동일 방침).
   useEffect(() => {
     let ignore = false;
     const tick = () => {
-      Promise.all([getMarketQuotes([symbol]), getCandles(symbol, "1m")])
-        .then(([quotes, cs]) => {
+      const quoteP =
+        useBe && stockID != null
+          ? getStockQuotes([stockID]).then((qs) =>
+              qs[0] ? stockQuoteToMarketQuote(symbol, qs[0]) : null,
+            )
+          : getMarketQuotes([symbol]).then((qs) => qs[0] ?? null);
+      const candleP =
+        useBe && stockID != null
+          ? getStockCandles(stockID, "1m")
+          : getCandles(symbol, "1m");
+
+      quoteP
+        .then((q) => {
           if (ignore) return;
-          setQuote(quotes[0] ?? null);
-          if (cs.length) setCandles(cs);
+          setQuote(q);
           setUpdatedAt(nowTime());
+        })
+        .catch(() => {});
+      candleP
+        .then((cs) => {
+          if (!ignore && cs.length) setCandles(cs);
         })
         .catch(() => {});
     };
@@ -184,16 +209,23 @@ export function StockDetailPanel({
       ignore = true;
       window.clearInterval(timer);
     };
-  }, [symbol]);
+  }, [symbol, useBe, stockID]);
 
   const pct = (quote?.changePercent ?? Number.parseFloat(stock.change)) || 0;
   const up = pct >= 0;
+  // 미장+KIS priceKrw 가 있으면 그 종목 실효 환율, 아니면 글로벌 환율.
+  const rate = effectiveKrwRate(
+    stock.market,
+    quote?.price,
+    quote?.priceKrw,
+    usdKrw,
+  );
   const metrics = buildMetrics(
     stock,
     quote,
     updatedAt,
     currency,
-    usdKrw,
+    rate,
     timeframe,
   );
   const added = positions.some((p) => p.id === stock.code);
@@ -273,7 +305,12 @@ export function StockDetailPanel({
             value={metrics.change}
             valueClass={changeColorClass(metrics.changeRate)}
           />
-          <MetricLine name="등락률" value={metrics.changeRate} isString />
+          <MetricLine
+            name="등락률"
+            value={metrics.changeRate}
+            isString
+            valueClass={changeColorClass(metrics.changeRate)}
+          />
           <MetricLine name="거래량" value={metrics.volume} isString />
           <MetricLine name="거래대금" value={metrics.value} isString />
           <MetricLine name="갱신시각" value={metrics.timestamp} isString last />

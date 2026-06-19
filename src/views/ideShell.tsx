@@ -536,6 +536,7 @@ export function IdeShell({
                       style={{ width: detailWidth }}
                     >
                       <StockDetailPanel
+                        key={detailStock.code}
                         stock={detailStock}
                         onClose={() => {
                           // 묶음(즐겨찾기)이면 연결된 차트 탭까지 닫고(상세는 그 안에서 해제),

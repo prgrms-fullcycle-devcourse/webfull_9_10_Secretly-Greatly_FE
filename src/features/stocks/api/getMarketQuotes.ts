@@ -2,6 +2,8 @@
 export interface MarketQuote {
   symbol: string;
   price: number | null;
+  /** 원화 환산가 — KIS(BE) 시세에만 존재(미장은 KIS 환율 적용). Yahoo 경로는 undefined. */
+  priceKrw?: number | null;
   /** 등락률 = 전일 종가 대비(당일), %. 분봉 토글의 "일간"(표준 기본). */
   changePercent: number | null;
   /** 기간별 등락률(%): 직전 15분·30분 전 대비. 분봉 토글이 골라 쓴다. */
