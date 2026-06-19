@@ -1,6 +1,6 @@
 import { customInstance, type APIResponse } from "@/shared/api";
 
-export type CandleInterval = "1m" | "1d" | "1wk" | "1mo";
+export type CandleInterval = "1d" | "1wk" | "1mo";
 
 export interface StockCandle {
   time: number;

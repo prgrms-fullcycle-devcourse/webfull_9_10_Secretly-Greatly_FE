@@ -9,12 +9,10 @@ import {
   type SelectOption,
 } from "@/shared/ui";
 import { useAuthStore } from "@/features/auth/model";
-import { useKisStore } from "@/features/auth/model/kisStore";
 import {
   changeColorClass,
   compactKo,
   convertCurrency,
-  effectiveKrwRate,
   formatPrice,
   nativeCurrency,
   parseVolume,
@@ -39,10 +37,8 @@ import {
 } from "@/features/timeframe";
 import {
   getMarketQuotes,
-  getStockQuotes,
   toYahooSymbol,
   type MarketQuote,
-  type StockQuote,
 } from "@/features/stocks";
 import { useWatchlistStore, type WatchlistItem } from "@/features/watchlist";
 import type { StockSummary } from "@/widgets/stockDetail";
@@ -63,8 +59,6 @@ interface StockRow {
   code: string;
   name: string;
   priceRaw: number | null;
-  /** 원화 환산가 — KIS(BE) 시세에만. 미장을 원화로 볼 때 KIS 환율로 표시. */
-  priceKrw?: number | null;
   pctDay: number | null;
   pct15m: number | null;
   pct30m: number | null;
@@ -88,7 +82,7 @@ const SORT_OPTIONS: ReadonlyArray<SelectOption<SortKey>> = [
 let lastSortKey: SortKey = "default";
 
 const NO_VALUE = "—";
-const REFRESH_SEC = 30;
+const REFRESH_SEC = 5;
 
 let cachedRows: StockRow[] = [];
 
@@ -105,25 +99,6 @@ function toYahooRow(
     pctDay: quote?.changePercent ?? null,
     pct15m: quote?.change15m ?? null,
     pct30m: quote?.change30m ?? null,
-    volume: quote?.volume == null ? NO_VALUE : compactKo(quote.volume),
-  };
-}
-
-/** KIS(BE) 시세 → 행. priceKrw·기간별 등락률을 그대로 싣는다. */
-function toBeRow(
-  stock: WatchlistItem,
-  quote: StockQuote | undefined,
-): StockRow {
-  return {
-    stockId: stock.stockId,
-    code: stock.code,
-    name: stock.name,
-    market: stock.market,
-    priceRaw: quote?.price ?? null,
-    priceKrw: quote?.priceKrw ?? null,
-    pctDay: quote?.changeRate.daily ?? null,
-    pct15m: quote?.changeRate.m15 ?? null,
-    pct30m: quote?.changeRate.m30 ?? null,
     volume: quote?.volume == null ? NO_VALUE : compactKo(quote.volume),
   };
 }
@@ -266,49 +241,23 @@ export function StocksSheetPanel({
   const [loading, setLoading] = useState(() => cachedRows.length === 0);
   const [error, setError] = useState(false);
   const isGuest = !useAuthStore((s) => s.isAuthenticated);
-  const kisConnected = useKisStore((s) => s.connected);
   const prevPricesRef = useRef<Map<string, number | null>>(new Map());
   const [flashCodes, setFlashCodes] = useState<Set<string>>(new Set());
   const watchlist = useWatchlistStore((s) => s.items);
 
   const secondsLeft = useRefreshCountdown(
     (isActive) => {
-      // 비KIS·게스트 = 전부 Yahoo.
-      // KIS 회원 = stockId 있는 종목은 BE(KIS), 아직 없는 종목은 Yahoo 로 섞어 채운다.
-      const fetchRows = async (): Promise<StockRow[]> => {
-        const toSymbol = (s: WatchlistItem) => toYahooSymbol(s.code, s.market);
+      const symbols = watchlist.map((s) => toYahooSymbol(s.code, s.market));
 
-        if (!kisConnected) {
-          const symbols = watchlist.map(toSymbol);
-          const quotes = await getMarketQuotes(symbols);
-          const ymap = new Map(quotes.map((q) => [q.symbol, q]));
-          return watchlist.map((s) => toYahooRow(s, ymap.get(toSymbol(s))));
-        }
-
-        const beItems = watchlist.filter((s) => s.stockId != null);
-        const yahooItems = watchlist.filter((s) => s.stockId == null);
-        const yahooSymbols = yahooItems.map(toSymbol);
-
-        const [beQuotes, yahooQuotes] = await Promise.all([
-          beItems.length > 0
-            ? getStockQuotes(beItems.map((s) => s.stockId as number))
-            : Promise.resolve<StockQuote[]>([]),
-          yahooSymbols.length > 0
-            ? getMarketQuotes(yahooSymbols)
-            : Promise.resolve<MarketQuote[]>([]),
-        ]);
-
-        const bemap = new Map(beQuotes.map((q) => [q.stockId, q]));
-        const ymap = new Map(yahooQuotes.map((q) => [q.symbol, q]));
-
-        return watchlist.map((s) =>
-          s.stockId != null
-            ? toBeRow(s, bemap.get(s.stockId))
-            : toYahooRow(s, ymap.get(toSymbol(s))),
-        );
-      };
-
-      fetchRows()
+      getMarketQuotes(symbols)
+        .then((quotes) =>
+          watchlist.map((s, i) =>
+            toYahooRow(
+              s,
+              quotes.find((q) => q.symbol === symbols[i]),
+            ),
+          ),
+        )
         .then((rows) => {
           if (!isActive()) return;
 
@@ -340,8 +289,7 @@ export function StocksSheetPanel({
           if (isActive()) setLoading(false);
         });
     },
-    // stockId 까지 key 에 포함 — 같은 종목이라도 stockId 가 나중에 채워지면 즉시 BE 로 전환.
-    `stocks:${kisConnected}:${watchlist.map((s) => `${s.code}#${s.stockId ?? ""}`).join(",")}`,
+    `stocks:${watchlist.map((s) => s.code).join(",")}`,
     REFRESH_SEC,
   );
 
@@ -352,10 +300,6 @@ export function StocksSheetPanel({
   const timeframe = useTimeframeStore((s) => s.timeframe);
   const positions = usePositionsStore((state) => state.positions);
   const openAddModal = useAddPositionModal((state) => state.open);
-
-  // 미장+KIS priceKrw 가 있으면 그 종목의 실효 환율, 아니면 글로벌 환율.
-  const rowRate = (row: StockRow) =>
-    effectiveKrwRate(row.market, row.priceRaw, row.priceKrw, usdKrw);
 
   const isFavorite = (code: string) =>
     favoriteItems.some((favorite) => favorite.code === code);
@@ -387,8 +331,8 @@ export function StocksSheetPanel({
       ? filteredStocks
       : [...filteredStocks].sort(
           (a, b) =>
-            getSortValue(b, sortKey, currency, rowRate(b), timeframe) -
-            getSortValue(a, sortKey, currency, rowRate(a), timeframe),
+            getSortValue(b, sortKey, currency, usdKrw, timeframe) -
+            getSortValue(a, sortKey, currency, usdKrw, timeframe),
         );
 
   const title = activeMarket === "ALL" ? "전체" : activeMarket;
@@ -495,7 +439,7 @@ export function StocksSheetPanel({
                     stock.priceRaw,
                     stock.market,
                     currency,
-                    rowRate(stock),
+                    usdKrw,
                   )}
                   valueClass="text-[#b5cea8]"
                 />

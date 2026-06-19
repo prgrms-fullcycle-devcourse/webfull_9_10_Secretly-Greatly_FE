@@ -4,7 +4,6 @@ import { useState } from "react";
 import { CapsuleToggle, Codicon, type CapsuleToggleOption } from "@/shared/ui";
 import {
   changeColorClass,
-  effectiveKrwRate,
   formatPrice,
   useRefreshCountdown,
 } from "@/shared/lib";
@@ -13,13 +12,10 @@ import { useKisStore } from "@/features/auth/model/kisStore";
 import {
   getCandles,
   getMarketQuotes,
-  getStockQuotes,
-  stockQuoteToMarketQuote,
   toYahooSymbol,
   type MarketQuote,
 } from "@/features/stocks";
 import { getStockCandles } from "@/features/stocks/api";
-import { aggregateMinuteCandles } from "@/features/stocks/lib/aggregateCandles";
 import type { StockSummary } from "../model/types";
 import { candlesToChartData, type ChartData } from "../model/chartData";
 import { PriceChart, type ChartType } from "./priceChart";
@@ -65,28 +61,18 @@ const CHART_TYPE_OPTIONS: Array<{
 /** 이동평균선 기간 (모듈 상수 = 안정적 참조로 effect 재실행 방지). */
 const MA_PERIODS = [5, 20, 60, 120];
 
-/** 차트 자동 갱신 주기 (초) — KIS(30초 적재)·Yahoo(지연) 데이터라 30초. */
-const REFRESH_SEC = 30;
+/** 차트 자동 갱신 주기 (초) — 시세 리스트와 같은 주기 + 카운트다운. */
+const REFRESH_SEC = 5;
 
-// BE(KIS) 캔들이 직접 주는 봉. 5/15/30/60분은 1분봉을 받아 FE 에서 집계한다.
-const BE_DIRECT_INTERVALS = new Set(["1m", "1d", "1wk", "1mo"]);
-const AGGREGATE_MINUTES: Record<string, number> = {
-  "5m": 5,
-  "15m": 15,
-  "30m": 30,
-  "60m": 60,
-};
+const BE_SUPPORTED_INTERVALS = new Set(["1d", "1wk", "1mo"]);
 
 const LIMIT_BY_INTERVAL: Record<string, number> = {
-  "1m": 250,
   "1d": 250,
   "1wk": 250,
   "1mo": 250,
 };
-// 분봉 집계용 1분봉 개수 — BE limit 최대(500)까지. 5/15/30/60분 집계 깊이를 위해.
-const AGGREGATE_1M_LIMIT = 500;
 
-type BeCandleInterval = "1m" | "1d" | "1wk" | "1mo";
+type BeCandleInterval = "1d" | "1wk" | "1mo";
 
 export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
   const [interval, setInterval] = useState("15m");
@@ -104,82 +90,47 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
   const kisConnected = useKisStore((s) => s.connected);
 
   const symbol = toYahooSymbol(stock.code, stock.market);
-  // KIS 연동 + stockId 있으면 모든 봉을 BE(KIS) 로 처리한다(직접 or 1분봉 집계).
-  const shouldUseBeCandles = kisConnected && stock.stockId != null;
+  const shouldUseBeCandles =
+    kisConnected &&
+    stock.stockId != null &&
+    BE_SUPPORTED_INTERVALS.has(interval);
 
   // 자동 갱신 폴링 (공통 훅). 종목/주기 바뀌면 즉시 재조회.
-  // KIS 회원: 1m·일·주·월=BE 직접, 5/15/30/60분=BE 1분봉 집계 → 전 구간 KIS.
-  // 비KIS·게스트·BE 실패(403)는 Yahoo 캔들로 폴백.
+  // KIS 연동 + BE 지원 interval(일/주/월)은 BE 캔들 API를 우선 사용하고,
+  // 비KIS/분봉/BE 실패·403은 Yahoo 캔들로 폴백한다.
   useRefreshCountdown(
     (isActive) => {
       const fetchCandles = async () => {
         try {
           if (shouldUseBeCandles && stock.stockId != null) {
-            // 1m·일·주·월 = BE 직접
-            if (BE_DIRECT_INTERVALS.has(interval)) {
-              const be = await getStockCandles(
-                stock.stockId,
-                interval as BeCandleInterval,
-                LIMIT_BY_INTERVAL[interval] ?? 250,
-              );
-              if (be.length > 0) return be;
-            } else {
-              // 5·15·30·60분 = BE 1분봉을 받아 집계
-              const bucket = AGGREGATE_MINUTES[interval];
-              if (bucket) {
-                const oneMin = await getStockCandles(
-                  stock.stockId,
-                  "1m",
-                  AGGREGATE_1M_LIMIT,
-                );
-                const agg = aggregateMinuteCandles(oneMin, bucket);
-                if (agg.length > 0) return agg;
-              }
-            }
+            return await getStockCandles(
+              stock.stockId,
+              interval as BeCandleInterval,
+              LIMIT_BY_INTERVAL[interval] ?? 250,
+            );
           }
 
-          // BE 미사용·미지원·빈 응답 → Yahoo 폴백
           return await getCandles(symbol, interval);
         } catch {
           return await getCandles(symbol, interval);
         }
       };
 
-      // 헤더 시세 — KIS 회원이면 BE, 아니면 Yahoo. 보조 정보라 실패해도 차트는 그린다.
-      const fetchQuote = async (): Promise<MarketQuote | null> => {
-        try {
-          if (shouldUseBeCandles && stock.stockId != null) {
-            const qs = await getStockQuotes([stock.stockId]);
-            if (qs[0]) return stockQuoteToMarketQuote(symbol, qs[0]);
-          }
-        } catch {
-          // BE 실패 → Yahoo 폴백
-        }
-        const ys = await getMarketQuotes([symbol]).catch(
-          (): MarketQuote[] => [],
-        );
-        return ys[0] ?? null;
-      };
-
-      Promise.all([fetchCandles(), fetchQuote()])
-        .then(([candles, q]) => {
+      Promise.all([fetchCandles(), getMarketQuotes([symbol])])
+        .then(([candles, quotes]) => {
           if (!isActive()) return;
 
           if (candles.length === 0) {
-            setChartData(null); // 이전(스테일) 차트가 남지 않도록 비운다.
             setError(true);
             return;
           }
 
           setChartData(candlesToChartData(candles));
-          setQuote(q);
+          setQuote(quotes[0] ?? null);
           setError(false);
         })
         .catch(() => {
-          if (isActive()) {
-            setChartData(null); // 예외 시에도 이전 차트가 남지 않도록 비운다.
-            setError(true);
-          }
+          if (isActive()) setError(true);
         });
     },
     `${symbol}:${stock.stockId}:${interval}:${shouldUseBeCandles}`,
@@ -208,13 +159,6 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
   };
 
   // 헤더 금액 — 선택 통화(강조) + 반대 통화(보조) 둘 다 표시.
-  // 미장+KIS priceKrw 가 있으면 그 종목 실효 환율, 아니면 글로벌 환율.
-  const rate = effectiveKrwRate(
-    stock.market,
-    quote?.price,
-    quote?.priceKrw,
-    usdKrw,
-  );
   const otherCurrency = currency === "USD" ? "KRW" : "USD";
   const changePct =
     quote?.changePercent != null
@@ -239,10 +183,10 @@ export function StockBigChartPanel({ stock }: StockBigChartPanelProps) {
           {quote?.price != null && (
             <div className="mt-1 flex items-baseline gap-2">
               <span className="font-mono text-[20px] text-vscode-fg">
-                {formatPrice(quote.price, stock.market, currency, rate)}
+                {formatPrice(quote.price, stock.market, currency, usdKrw)}
               </span>
               <span className="font-mono text-[13px] text-vscode-fg-desc">
-                {formatPrice(quote.price, stock.market, otherCurrency, rate)}
+                {formatPrice(quote.price, stock.market, otherCurrency, usdKrw)}
               </span>
               {changePct != null && (
                 <span

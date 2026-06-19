@@ -26,22 +26,6 @@ export function convertCurrency(
 }
 
 /**
- * 미장 종목을 원화로 표시할 때 쓸 실효 환율.
- * KIS(BE) priceKrw 가 있으면 그 종목의 원화/USD 비율을 환율로 쓴다(KIS 환율 = 정확).
- * 국장이거나 priceKrw 가 없으면 폴백(글로벌 USD→KRW) 환율을 그대로 쓴다.
- */
-export function effectiveKrwRate(
-  market: Market,
-  priceNative: number | null | undefined,
-  priceKrw: number | null | undefined,
-  fallbackRate: number,
-): number {
-  return market === "OVERSEAS" && priceKrw != null && priceNative
-    ? priceKrw / priceNative
-    : fallbackRate;
-}
-
-/**
  * 시장 native 가격(숫자) → 표시 통화로 변환 후 기호 포함 문자열.
  * USD는 소수 2자리, KRW는 정수 천단위. nullish면 "—". `rate`=실시간 USD→KRW(미지정 시 폴백).
  */
