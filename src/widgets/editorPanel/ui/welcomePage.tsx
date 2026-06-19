@@ -23,7 +23,7 @@ const aboutText =
 const highlights = [
   {
     icon: "codicon-eye-closed",
-    label: "VS Code로 위장 — ESC 두 번이면 즉시 작업 화면으로 가려요",
+    label: "화면 전체를 VS Code 개발 도구처럼 위장",
   },
   {
     icon: "codicon-pulse",
@@ -38,17 +38,10 @@ const highlights = [
 // 우측 안내 카드 — 동작하는 기능과 위장 요소 구분.
 const guideCards = [
   {
-    title: "동작하는 버튼만 정리했어요",
+    title: "관심종목 · 포지션 탐색기",
     description:
-      "메뉴 바와 툴팁의 단축키(Ctrl+B 등), 상태 표시줄의 브랜치·오류 숫자는 VS Code 느낌을 살린 장식이에요. 실제 기능은 아래 버튼으로 사용하세요.",
-    icon: "codicon-info",
-    variant: "featured",
-  },
-  {
-    title: "급할 땐 ESC 두 번",
-    description:
-      "ESC 를 빠르게 두 번 누르면 화면이 곧바로 Git 작업 화면으로 바뀌어 트레이딩 화면을 가려요. 다시 ESC 를 누르면 원래대로 돌아옵니다.",
-    icon: "codicon-eye-closed",
+      "왼쪽 파일 아이콘을 누르면 관심종목과 보유 포지션을 트리에서 볼 수 있어요. 항목을 클릭하면 상세 화면이 열립니다.",
+    icon: "codicon-files",
   },
   {
     title: "실시간 채팅 패널",
