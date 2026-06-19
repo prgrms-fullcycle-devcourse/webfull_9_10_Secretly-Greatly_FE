@@ -273,7 +273,12 @@ export function StockDetailPanel({
             value={metrics.change}
             valueClass={changeColorClass(metrics.changeRate)}
           />
-          <MetricLine name="등락률" value={metrics.changeRate} isString />
+          <MetricLine
+            name="등락률"
+            value={metrics.changeRate}
+            isString
+            valueClass={changeColorClass(metrics.changeRate)}
+          />
           <MetricLine name="거래량" value={metrics.volume} isString />
           <MetricLine name="거래대금" value={metrics.value} isString />
           <MetricLine name="갱신시각" value={metrics.timestamp} isString last />
